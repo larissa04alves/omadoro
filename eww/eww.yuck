@@ -1,7 +1,7 @@
 ;; Pomodoro — popup do eww.
 ;; Lê o estado de `pomo get` (1x/s) e dispara comandos `pomo …` nos botões.
 
-(defpoll estado :interval "1s"
+(defpoll estado :interval "500ms"
   :initial `{"mmss":"25:00","percent":100,"phase":"work","phase_label":"Foco","running":false,"work":25,"short":5,"long":15,"long_every":4,"auto_start_next":false}`
   `~/.local/bin/pomo get`)
 
@@ -41,10 +41,8 @@
       (label :halign "start" :hexpand true :class "cfg-name" :wrap true :text "Auto-iniciar a próxima fase")
       (button :class "switch" :valign "center"
               :onclick "~/.local/bin/pomo config set auto_start_next ${estado.auto_start_next ? 'false' : 'true'}"
-        (overlay
-          (box :class "rail ${estado.auto_start_next ? 'on' : 'off'}" :valign "center")
-          (box :halign {estado.auto_start_next ? "end" : "start"} :valign "center"
-            (box :class "knob")))))))
+        (box :class "track ${estado.auto_start_next ? 'on' : 'off'}" :space-evenly false
+          (box :class "knob ${estado.auto_start_next ? 'on' : 'off'}"))))))
 
 ;; ---------------- Janela ----------------
 (defwidget tabbar []

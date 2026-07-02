@@ -136,21 +136,25 @@ scale slider {
 }
 .switch {
   background-color: transparent;
-  min-width: 40px;
-  min-height: 16px;
 }
-.rail {
-  min-width: 40px;
-  min-height: 6px;
+.track {
+  min-width: 48px;
+  min-height: 26px;
   border-radius: 999px;
   background-color: $track;
+  transition: background-color 200ms ease;
 }
-.rail.on {
+.track.on {
   background-color: $accent;
 }
 .knob {
-  min-width: 16px;
-  min-height: 16px;
+  min-width: 22px;
+  min-height: 22px;
+  margin: 2px;
   border-radius: 999px;
   background-color: #ffffff;
+  transition: margin 200ms ease;
+}
+.knob.on {
+  margin-left: 24px;
 }
