@@ -1,0 +1,147 @@
+// Layout do popup. As cores vêm de _theme.scss (trocado no install).
+@import "theme";
+
+* {
+  all: unset;
+  font-family: "JetBrainsMono Nerd Font", "JetBrains Mono", sans-serif;
+}
+
+.card {
+  background-color: $bg;
+  border: 1px solid $card-edge;
+  border-radius: 26px;
+  padding: 16px;
+  color: $ink;
+}
+
+/* tabs */
+.tabs {
+  background-color: rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 4px;
+  margin-bottom: 14px;
+}
+.tab {
+  padding: 8px 0;
+  border-radius: 11px;
+  color: $ink-dim;
+  font-size: 14px;
+  font-weight: 600;
+}
+.tab.active {
+  background-color: rgba(255, 255, 255, 0.10);
+  color: $ink;
+}
+
+.tab-body {
+  padding: 4px;
+}
+
+/* anel */
+.ring-wrap {
+  margin: 6px 0 2px 0;
+}
+.ring {
+  color: $accent;
+  background-color: $track;
+  min-width: 210px;
+  min-height: 210px;
+}
+.ring.short_break,
+.ring.long_break {
+  color: $accent-break;
+}
+.ring.paused {
+  color: $ink-dim;
+}
+.time {
+  color: $ink;
+  font-size: 44px;
+  font-weight: 600;
+}
+.phase {
+  color: $ink-dim;
+  font-size: 12px;
+  margin-top: 6px;
+}
+
+/* controles */
+.controls {
+  margin-top: 14px;
+}
+.btn {
+  border-radius: 999px;
+  background-color: rgba(255, 255, 255, 0.07);
+  color: $ink;
+}
+.btn:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+.btn.side {
+  min-width: 46px;
+  min-height: 46px;
+  font-size: 18px;
+}
+.btn.main {
+  min-width: 62px;
+  min-height: 62px;
+  font-size: 24px;
+  background-color: $accent;
+  color: $accent-ink;
+}
+.btn.main:hover {
+  background-color: $accent;
+}
+
+/* config */
+.cfg-row {
+  margin: 10px 4px;
+}
+.cfg-head {
+  margin-bottom: 6px;
+}
+.cfg-name {
+  color: $ink;
+  font-size: 13px;
+}
+.cfg-val {
+  color: $accent;
+  font-size: 13px;
+  font-weight: 600;
+}
+scale trough {
+  background-color: $track;
+  border-radius: 999px;
+  min-height: 6px;
+}
+scale trough highlight {
+  background-color: $accent;
+  border-radius: 999px;
+}
+scale slider {
+  background-color: $accent;
+  border-radius: 999px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: -6px;
+}
+
+.cfg-toggle {
+  margin: 16px 4px 4px 4px;
+}
+.switch {
+  min-width: 46px;
+  min-height: 24px;
+  border-radius: 999px;
+  background-color: $track;
+}
+.switch.on {
+  background-color: $accent;
+}
+.knob {
+  min-width: 18px;
+  min-height: 18px;
+  margin: 3px;
+  border-radius: 999px;
+  background-color: #ffffff;
+}

@@ -1,0 +1,11 @@
+{
+  // Módulo do timer pomodoro (adicionado ao "include" da sua config.jsonc).
+  "custom/pomodoro": {
+    "exec": "~/.local/bin/pomo tick",
+    "return-type": "json",
+    "interval": 1,
+    "on-click": "eww --config ~/.config/eww/pomodoro open --toggle pomodoro",
+    "on-click-right": "~/.local/bin/pomo toggle",
+    "tooltip": true
+  }
+}

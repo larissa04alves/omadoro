@@ -1,0 +1,11 @@
+/* >>> pomodoro >>> */
+#custom-pomodoro {
+  color: @foreground;
+  font-size: 13px;
+  padding: 0 6px;
+  margin: 3.5px 5px;
+}
+#custom-pomodoro.focus { color: #7fc9c0; }
+#custom-pomodoro.break { color: #a6ddd6; }
+#custom-pomodoro.paused { color: #95aead; opacity: 0.75; }
+/* <<< pomodoro <<< */

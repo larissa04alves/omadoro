@@ -1,0 +1,63 @@
+;; Pomodoro — popup do eww.
+;; Lê o estado de `pomo get` (1x/s) e dispara comandos `pomo …` nos botões.
+
+(defpoll estado :interval "1s"
+  :initial `{"mmss":"25:00","percent":100,"phase":"work","phase_label":"Foco","running":false,"work":25,"short":5,"long":15,"long_every":4,"auto_start_next":false}`
+  `~/.local/bin/pomo get`)
+
+(defvar active_tab 0)
+
+;; ---------------- Aba Pomodoro ----------------
+(defwidget pomodoro_tab []
+  (box :orientation "v" :space-evenly false :class "tab-body"
+    (overlay :class "ring-wrap"
+      (circular-progress :class "ring ${estado.phase} ${estado.running ? '' : 'paused'}"
+                         :value {estado.percent} :thickness 14 :start-at 0 :clockwise true)
+      (box :orientation "v" :space-evenly false :valign "center" :halign "center" :class "ring-center"
+        (label :class "time" :text {estado.mmss})
+        (label :class "phase" :text {estado.phase_label})))
+    (box :class "controls" :halign "center" :space-evenly false :spacing 20
+      (button :class "btn side" :onclick "~/.local/bin/pomo restart" "↺")
+      (button :class "btn main" :onclick "~/.local/bin/pomo toggle" {estado.running ? "⏸" : "▶"})
+      (button :class "btn side" :onclick "~/.local/bin/pomo skip" "⏭"))))
+
+;; ---------------- Aba Config ----------------
+(defwidget slider_row [name value min max unit key]
+  (box :orientation "v" :space-evenly false :class "cfg-row"
+    (box :class "cfg-head"
+      (label :halign "start" :hexpand true :class "cfg-name" :text name)
+      (label :halign "end" :class "cfg-val" :text "${value} ${unit}"))
+    (scale :min min :max max :value value :round-digits 0 :draw-value false
+           :onchange "~/.local/bin/pomo config set ${key} {}")))
+
+(defwidget config_tab []
+  (box :orientation "v" :space-evenly false :class "tab-body"
+    (slider_row :name "Tempo de foco" :value {estado.work} :min 5 :max 60 :unit "min" :key "work")
+    (slider_row :name "Pausa curta" :value {estado.short} :min 1 :max 20 :unit "min" :key "short")
+    (slider_row :name "Pausa longa" :value {estado.long} :min 10 :max 45 :unit "min" :key "long")
+    (slider_row :name "Ciclos até a pausa longa" :value {estado.long_every} :min 2 :max 8 :unit "" :key "long_every")
+    (box :class "cfg-toggle" :space-evenly false
+      (label :halign "start" :hexpand true :class "cfg-name" :text "Iniciar próxima fase automaticamente")
+      (button :class "switch ${estado.auto_start_next ? 'on' : 'off'}"
+              :onclick "~/.local/bin/pomo config set auto_start_next ${estado.auto_start_next ? 'false' : 'true'}"
+        (box :halign {estado.auto_start_next ? "end" : "start"} :valign "center" :hexpand true
+          (box :class "knob"))))))
+
+;; ---------------- Janela ----------------
+(defwidget tabbar []
+  (box :class "tabs" :space-evenly true :spacing 4
+    (button :class "tab ${active_tab == 0 ? 'active' : ''}" :onclick "eww update active_tab=0" "Pomodoro")
+    (button :class "tab ${active_tab == 1 ? 'active' : ''}" :onclick "eww update active_tab=1" "Config")))
+
+(defwidget root []
+  (box :orientation "v" :space-evenly false :class "card"
+    (tabbar)
+    (stack :selected active_tab :transition "slideleft" :same-size true
+      (pomodoro_tab)
+      (config_tab))))
+
+(defwindow pomodoro
+  :monitor 0
+  :stacking "overlay"
+  :geometry (geometry :y "46px" :width "340px" :height "460px" :anchor "top center")
+  (root))
