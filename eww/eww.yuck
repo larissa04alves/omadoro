@@ -26,7 +26,7 @@
 (defwidget slider_row [name value min max unit key]
   (box :orientation "v" :space-evenly false :class "cfg-row"
     (box :class "cfg-head"
-      (label :halign "start" :hexpand true :class "cfg-name" :text name)
+      (label :halign "start" :hexpand true :class "cfg-name" :wrap true :text name)
       (label :halign "end" :class "cfg-val" :text "${value} ${unit}"))
     (scale :min min :max max :value value :round-digits 0 :draw-value false
            :onchange "~/.local/bin/pomo config set ${key} {}")))
@@ -38,7 +38,7 @@
     (slider_row :name "Pausa longa" :value {estado.long} :min 10 :max 45 :unit "min" :key "long")
     (slider_row :name "Ciclos até a pausa longa" :value {estado.long_every} :min 2 :max 8 :unit "" :key "long_every")
     (box :class "cfg-toggle" :space-evenly false
-      (label :halign "start" :hexpand true :class "cfg-name" :text "Iniciar próxima fase automaticamente")
+      (label :halign "start" :hexpand true :class "cfg-name" :wrap true :text "Auto-iniciar a próxima fase")
       (button :class "switch ${estado.auto_start_next ? 'on' : 'off'}"
               :onclick "~/.local/bin/pomo config set auto_start_next ${estado.auto_start_next ? 'false' : 'true'}"
         (box :halign {estado.auto_start_next ? "end" : "start"} :valign "center" :hexpand true
@@ -60,5 +60,14 @@
 (defwindow pomodoro
   :monitor 0
   :stacking "overlay"
-  :geometry (geometry :y "46px" :width "340px" :height "460px" :anchor "top center")
+  :geometry (geometry :y "40px" :width "290px" :height "430px" :anchor "top center")
   (root))
+
+;; Fundo transparente que fecha o popup ao clicar fora dele.
+(defwindow backdrop
+  :monitor 0
+  :stacking "overlay"
+  :focusable false
+  :geometry (geometry :width "100%" :height "100%")
+  (eventbox :onclick "eww -c ~/.config/eww/pomodoro close pomodoro backdrop"
+    (box :class "backdrop")))
