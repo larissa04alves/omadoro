@@ -38,14 +38,14 @@
 }
 
 /* anel */
-.ring-wrap {
+.ring-slot {
+  min-width: 210px;
+  min-height: 210px;
   margin: 6px 0 2px 0;
 }
 .ring {
   color: $accent;
   background-color: $track;
-  min-width: 210px;
-  min-height: 210px;
 }
 .ring.short_break,
 .ring.long_break {
