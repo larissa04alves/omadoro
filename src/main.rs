@@ -75,12 +75,17 @@ fn main() {
         Cmd::Reset => mutate(&cfg, |s| s.reset(&cfg)),
         Cmd::Config { action } => {
             let ConfigCmd::Set { key, value } = action;
-            let mut cfg = cfg;
-            if let Err(e) = cfg.set(&key, &value) {
+            let mut updated = cfg.clone();
+            if let Err(e) = updated.set(&key, &value) {
                 eprintln!("pomo: {e}");
                 std::process::exit(1);
             }
-            if let Err(e) = cfg.save() {
+            // Reflete a nova duração no timer atual, se estiver pausado no início.
+            let mut state = State::load(&cfg);
+            if state.resync_duration(&cfg, &updated) {
+                let _ = state.save();
+            }
+            if let Err(e) = updated.save() {
                 eprintln!("pomo: falha ao salvar config: {e}");
                 std::process::exit(1);
             }

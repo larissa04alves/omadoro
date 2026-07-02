@@ -56,6 +56,36 @@ backup `.bak.<timestamp>` antes.
 ./uninstall.sh   # reverte os patches e remove os arquivos
 ```
 
+## Comandos
+
+Mudar **cor ou posição** (TUI com setas + Enter):
+
+```bash
+cd ~/Projects/pomodoro-timer-waybar && ./configure.sh
+```
+
+Mudar **durações** pelo terminal (valem no próximo ciclo, ou já no ato se o timer
+estiver pausado no início):
+
+```bash
+pomo config set work 25              # foco (min)
+pomo config set short 5              # pausa curta
+pomo config set long 15             # pausa longa
+pomo config set long_every 4        # ciclos até a pausa longa
+pomo config set auto_start_next true # inicia a próxima fase sozinho
+```
+
+Controlar o timer (o mesmo que os botões do popup):
+
+```bash
+pomo toggle    # pausar / retomar
+pomo skip      # pular fase
+pomo restart   # reiniciar a fase atual
+pomo reset     # zerar o ciclo
+```
+
+Internos, usados pela waybar/eww (não precisa rodar à mão): `pomo tick`, `pomo get`, `pomo configure`.
+
 ## Desenvolvimento
 
 ```bash

@@ -116,6 +116,21 @@ impl State {
         *self = State::initial(cfg);
     }
 
+    /// Reflete uma mudança de config no tempo restante: se a fase atual está
+    /// pausada e cheia (ainda não começou a correr), passa a mostrar a nova
+    /// duração no ato. Fases rodando ou pausadas no meio não são tocadas
+    /// (a mudança vale no próximo ciclo). Retorna `true` se alterou o estado.
+    pub fn resync_duration(&mut self, old: &Config, new: &Config) -> bool {
+        if !self.running && self.remaining == duration_secs(self.phase, old) {
+            let updated = duration_secs(self.phase, new);
+            if updated != self.remaining {
+                self.remaining = updated;
+                return true;
+            }
+        }
+        false
+    }
+
     /// Chamado a cada segundo pela waybar. Se a fase terminou, avança e devolve
     /// a transição (para notificação); caso contrário devolve `None`.
     pub fn tick(&mut self, now: u64, cfg: &Config) -> Option<Transition> {
@@ -250,5 +265,31 @@ mod tests {
         s.skip(0, &c);
         s.reset(&c);
         assert_eq!(s, State::initial(&c));
+    }
+
+    #[test]
+    fn resync_snaps_paused_full_phase() {
+        let old = cfg();
+        let mut new = old.clone();
+        new.work = 40;
+        let mut s = State::initial(&old); // foco pausado, 25:00
+        assert!(s.resync_duration(&old, &new));
+        assert_eq!(s.remaining, 40 * 60);
+    }
+
+    #[test]
+    fn resync_skips_running_or_midphase() {
+        let old = cfg();
+        let mut new = old.clone();
+        new.work = 40;
+
+        let mut running = State::initial(&old);
+        running.toggle(0); // rodando → não mexe
+        assert!(!running.resync_duration(&old, &new));
+
+        let mut mid = State::initial(&old);
+        mid.remaining = 600; // pausado no meio → não mexe
+        assert!(!mid.resync_duration(&old, &new));
+        assert_eq!(mid.remaining, 600);
     }
 }
