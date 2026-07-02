@@ -43,20 +43,31 @@ apply_theme() {
   echo "$name" > "$CONFIG_DIR/theme"
 }
 
-choose_position() {
-  echo; echo "  Onde colocar o pomodoro na waybar?"
-  local opts=("Esquerda" "Centro" "Direita") keys=(left center right)
-  select o in "${opts[@]}"; do
-    if [ -n "$o" ]; then set_position "${keys[$((REPLY - 1))]}"; ok "Posição: $o"; break; fi
-  done
+# Guarda a âncora do popup conforme a posição (lida pelo open.sh).
+write_anchor() {
+  mkdir -p "$CONFIG_DIR"
+  case "$1" in
+    left)  echo "top left" > "$CONFIG_DIR/anchor" ;;
+    right) echo "top right" > "$CONFIG_DIR/anchor" ;;
+    *)     echo "top center" > "$CONFIG_DIR/anchor" ;;
+  esac
 }
 
-choose_theme() {
-  echo; echo "  Qual cor?"
-  local opts=("Sage (verde-musgo)" "Lavanda (lilás)" "Névoa-mar (teal)") keys=(sage lavanda nevoamar)
-  select o in "${opts[@]}"; do
-    if [ -n "$o" ]; then apply_theme "${keys[$((REPLY - 1))]}"; ok "Cor: $o"; break; fi
-  done
+# Roda a TUI (ratatui) e aplica posição + cor. Fallback p/ o padrão se cancelar.
+run_config() {
+  local out pos theme
+  if out="$("$BIN_DIR/pomo" configure)"; then
+    pos="${out%% *}"
+    theme="${out##* }"
+  else
+    warn "Configuração cancelada — usando padrão (centro, Sage)"
+    pos="center"
+    theme="sage"
+  fi
+  set_position "$pos"
+  apply_theme "$theme"
+  write_anchor "$pos"
+  ok "Posição: $pos · Cor: $theme"
 }
 
 # Recarrega eww (config/estilo) e a waybar.

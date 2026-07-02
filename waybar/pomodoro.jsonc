@@ -4,7 +4,7 @@
     "exec": "~/.local/bin/pomo tick",
     "return-type": "json",
     "interval": 1,
-    "on-click": "eww --config ~/.config/eww/pomodoro open --toggle pomodoro",
+    "on-click": "~/.config/eww/pomodoro/open.sh",
     "on-click-right": "~/.local/bin/pomo toggle",
     "tooltip": true
   }

@@ -26,7 +26,8 @@ ok "pomo → $BIN_DIR/pomo"
 
 # 3. Instalar eww, temas e módulo da waybar
 mkdir -p "$EWW_DIR" "$CONFIG_DIR" "$STATE_DIR" "$THEMES_DIR"
-cp "$SCRIPT_DIR/eww/eww.yuck" "$SCRIPT_DIR/eww/eww.scss" "$SCRIPT_DIR/eww/_theme.scss" "$EWW_DIR/"
+cp "$SCRIPT_DIR/eww/eww.yuck" "$SCRIPT_DIR/eww/eww.scss" "$SCRIPT_DIR/eww/_theme.scss" "$SCRIPT_DIR/eww/open.sh" "$EWW_DIR/"
+chmod +x "$EWW_DIR/open.sh"
 cp -r "$SCRIPT_DIR/themes/." "$THEMES_DIR/"   # temas na config → configure.sh funciona sem o repo
 cp "$SCRIPT_DIR/waybar/pomodoro.jsonc" "$WAYBAR_DIR/pomodoro.jsonc"
 ok "Arquivos instalados"
@@ -51,9 +52,8 @@ if ! grep -q "eww --config $EWW_DIR daemon" "$HYPR_AUTOSTART" 2>/dev/null; then
   ok "eww daemon adicionado ao autostart"
 fi
 
-# 6. Configuração interativa
-choose_position
-choose_theme
+# 6. Configuração interativa (TUI)
+run_config
 
 # 7. Subir agora
 eww --config "$EWW_DIR" daemon >/dev/null 2>&1 || true

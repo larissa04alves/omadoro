@@ -35,6 +35,8 @@ enum Cmd {
         #[command(subcommand)]
         action: ConfigCmd,
     },
+    /// TUI de configuração; imprime "posição tema" no stdout.
+    Configure,
 }
 
 #[derive(Subcommand)]
@@ -83,6 +85,10 @@ fn main() {
                 std::process::exit(1);
             }
         }
+        Cmd::Configure => match pomo::configure::run() {
+            Some(c) => println!("{} {}", c.position, c.theme),
+            None => std::process::exit(1),
+        },
     }
 }
 

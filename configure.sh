@@ -10,8 +10,7 @@ mkdir -p "$THEMES_DIR"
 
 echo
 echo "  🍅 Reconfigurar pomodoro"
-choose_position
-choose_theme
+run_config
 reload
 echo
 ok "Feito."

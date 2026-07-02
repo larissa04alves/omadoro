@@ -47,8 +47,8 @@
 ;; ---------------- Janela ----------------
 (defwidget tabbar []
   (box :class "tabs" :space-evenly true :spacing 4
-    (button :class "tab ${active_tab == 0 ? 'active' : ''}" :onclick "eww update active_tab=0" "Pomodoro")
-    (button :class "tab ${active_tab == 1 ? 'active' : ''}" :onclick "eww update active_tab=1" "Config")))
+    (button :class "tab ${active_tab == 0 ? 'active' : ''}" :onclick "eww -c ~/.config/eww/pomodoro update active_tab=0" "Pomodoro")
+    (button :class "tab ${active_tab == 1 ? 'active' : ''}" :onclick "eww -c ~/.config/eww/pomodoro update active_tab=1" "Config")))
 
 (defwidget root []
   (box :orientation "v" :space-evenly false :class "card"
