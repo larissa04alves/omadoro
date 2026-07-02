@@ -83,9 +83,9 @@
   background-color: rgba(255, 255, 255, 0.14);
 }
 .btn.side {
-  min-width: 46px;
-  min-height: 46px;
-  font-size: 18px;
+  min-width: 56px;
+  min-height: 56px;
+  font-size: 16px;
 }
 .btn.main {
   min-width: 62px;
@@ -135,7 +135,7 @@ scale slider {
   margin: 16px 4px 4px 4px;
 }
 .switch {
-  min-width: 46px;
+  min-width: 44px;
   min-height: 24px;
   border-radius: 999px;
   background-color: $track;
@@ -144,9 +144,9 @@ scale slider {
   background-color: $accent;
 }
 .knob {
-  min-width: 18px;
-  min-height: 18px;
-  margin: 3px;
+  min-width: 16px;
+  min-height: 16px;
+  margin: 4px;
   border-radius: 999px;
   background-color: #ffffff;
 }
