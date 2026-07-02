@@ -18,9 +18,9 @@
           (label :class "time" :text {estado.mmss})
           (label :class "phase" :text {estado.phase_label}))))
     (box :class "controls" :halign "center" :space-evenly false :spacing 20
-      (button :class "btn side" :onclick "~/.local/bin/pomo restart" "↺")
+      (button :class "btn side" :onclick "~/.local/bin/pomo restart" "󰜉")
       (button :class "btn main" :onclick "~/.local/bin/pomo toggle" {estado.running ? "⏸" : "▶"})
-      (button :class "btn side" :onclick "~/.local/bin/pomo skip" "⏭"))))
+      (button :class "btn side" :onclick "~/.local/bin/pomo skip" "󰒭"))))
 
 ;; ---------------- Aba Config ----------------
 (defwidget slider_row [name value min max unit key]
