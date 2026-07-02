@@ -39,10 +39,12 @@
     (slider_row :name "Ciclos até a pausa longa" :value {estado.long_every} :min 2 :max 8 :unit "" :key "long_every")
     (box :class "cfg-toggle" :space-evenly false
       (label :halign "start" :hexpand true :class "cfg-name" :wrap true :text "Auto-iniciar a próxima fase")
-      (button :class "switch ${estado.auto_start_next ? 'on' : 'off'}"
+      (button :class "switch" :valign "center"
               :onclick "~/.local/bin/pomo config set auto_start_next ${estado.auto_start_next ? 'false' : 'true'}"
-        (box :halign {estado.auto_start_next ? "end" : "start"} :valign "center" :hexpand true
-          (box :class "knob"))))))
+        (overlay
+          (box :class "rail ${estado.auto_start_next ? 'on' : 'off'}" :valign "center")
+          (box :halign {estado.auto_start_next ? "end" : "start"} :valign "center"
+            (box :class "knob")))))))
 
 ;; ---------------- Janela ----------------
 (defwidget tabbar []

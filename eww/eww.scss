@@ -135,18 +135,22 @@ scale slider {
   margin: 16px 4px 4px 4px;
 }
 .switch {
-  min-width: 46px;
-  min-height: 18px;
+  background-color: transparent;
+  min-width: 40px;
+  min-height: 16px;
+}
+.rail {
+  min-width: 40px;
+  min-height: 6px;
   border-radius: 999px;
   background-color: $track;
 }
-.switch.on {
+.rail.on {
   background-color: $accent;
 }
 .knob {
-  min-width: 14px;
-  min-height: 14px;
-  margin: 2px;
+  min-width: 16px;
+  min-height: 16px;
   border-radius: 999px;
   background-color: #ffffff;
 }
