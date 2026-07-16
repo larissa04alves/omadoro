@@ -14,9 +14,12 @@
   color: $ink;
 }
 
-/* fundo que fecha o popup ao clicar fora (leve escurecida) */
+// Fundo que fecha o popup ao clicar fora — invisível de propósito: a captura
+// de cliques do GTK/layer-shell independe da cor (decisão de produto: nada de
+// escurecer a tela). Comentários com acento ficam em "//": o grass emite
+// @charset no CSS se algo não-ASCII vazar para a saída, e o GTK rejeita.
 .backdrop {
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: transparent;
 }
 
 /* tabs */
@@ -27,11 +30,15 @@
   margin-bottom: 14px;
 }
 .tab {
-  padding: 8px 0;
+  padding: 10px 0;
   border-radius: 11px;
   color: $ink-dim;
   font-size: 14px;
   font-weight: 600;
+  transition: background-color 150ms ease, color 150ms ease;
+}
+.tab:hover {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 .tab.active {
   background-color: rgba(255, 255, 255, 0.10);
@@ -51,6 +58,7 @@
 .ring {
   color: $accent;
   background-color: $track;
+  transition: color 200ms ease;
 }
 .ring.short_break,
 .ring.long_break {
@@ -78,9 +86,13 @@
   border-radius: 999px;
   background-color: rgba(255, 255, 255, 0.07);
   color: $ink;
+  transition: background-color 150ms ease;
 }
 .btn:hover {
   background-color: rgba(255, 255, 255, 0.14);
+}
+.btn:active {
+  background-color: rgba(255, 255, 255, 0.20);
 }
 .btn.side {
   min-width: 56px;
@@ -95,15 +107,18 @@
   color: $accent-ink;
 }
 .btn.main:hover {
-  background-color: $accent;
+  background-color: darken($accent, 6%);
+}
+.btn.main:active {
+  background-color: darken($accent, 12%);
 }
 
 /* config */
 .cfg-row {
-  margin: 10px 4px;
+  margin: 6px 4px;
 }
 .cfg-head {
-  margin-bottom: 6px;
+  margin-bottom: 4px;
 }
 .cfg-name {
   color: $ink;
@@ -132,7 +147,7 @@ scale slider {
 }
 
 .cfg-toggle {
-  margin: 16px 4px 4px 4px;
+  margin: 10px 4px 2px 4px;
 }
 .switch {
   background-color: transparent;
@@ -157,4 +172,44 @@ scale slider {
 }
 .knob.on {
   margin-left: 24px;
+}
+
+// zona de manutencao (atualizar / desinstalar)
+.cfg-zone {
+  margin: 10px 4px 2px 4px;
+  padding-top: 10px;
+  border-top: 1px solid $card-edge;
+}
+// padding lateral minimo: os botoes dividem a largura via space-evenly e um
+// padding gordo aqui infla o width request da janela inteira (aba Config
+// alargava o popup de 290 para 326px)
+.a-btn {
+  padding: 8px 10px;
+  border-radius: 11px;
+  background-color: rgba(255, 255, 255, 0.07);
+  color: $ink;
+  font-size: 13px;
+  font-weight: 600;
+  transition: background-color 150ms ease;
+}
+.a-btn:hover {
+  background-color: rgba(255, 255, 255, 0.14);
+}
+.a-btn.danger {
+  color: $danger;
+}
+.a-btn.danger:hover {
+  background-color: rgba($danger, 0.14);
+}
+.a-btn.danger-solid {
+  background-color: $danger;
+  color: $danger-ink;
+}
+.a-btn.danger-solid:hover {
+  background-color: darken($danger, 8%);
+}
+.confirm-q {
+  color: $ink-dim;
+  font-size: 12px;
+  margin: 2px 4px 4px 4px;
 }
