@@ -16,6 +16,9 @@ if ! command -v eww >/dev/null; then
   yay -S --needed eww-git
 fi
 command -v notify-send >/dev/null || warn "notify-send ausente — notificações não vão aparecer"
+command -v jq >/dev/null || warn "jq ausente — o popup vai ignorar o cursor e abrir sempre no monitor 0"
+fc-list 2>/dev/null | grep -qi "JetBrainsMono Nerd" ||
+  warn "JetBrainsMono Nerd Font ausente — os ícones dos botões podem virar caixas vazias"
 ok "Dependências ok"
 
 # 2. Compilar e instalar o binário
@@ -26,10 +29,12 @@ ok "pomo → $BIN_DIR/pomo"
 
 # 3. Instalar eww, temas e módulo da waybar
 mkdir -p "$EWW_DIR" "$CONFIG_DIR" "$STATE_DIR" "$THEMES_DIR"
-cp "$SCRIPT_DIR/eww/eww.yuck" "$SCRIPT_DIR/eww/eww.scss" "$SCRIPT_DIR/eww/_theme.scss" "$SCRIPT_DIR/eww/open.sh" "$EWW_DIR/"
-chmod +x "$EWW_DIR/open.sh"
+cp "$SCRIPT_DIR/eww/eww.yuck" "$SCRIPT_DIR/eww/eww.scss" "$SCRIPT_DIR/eww/_theme.scss" \
+   "$SCRIPT_DIR/eww/open.sh" "$SCRIPT_DIR/eww/actions.sh" "$EWW_DIR/"
+chmod +x "$EWW_DIR/open.sh" "$EWW_DIR/actions.sh"
 cp -r "$SCRIPT_DIR/themes/." "$THEMES_DIR/"   # temas na config → configure.sh funciona sem o repo
 cp "$SCRIPT_DIR/waybar/pomodoro.jsonc" "$WAYBAR_DIR/pomodoro.jsonc"
+echo "$SCRIPT_DIR" > "$CONFIG_DIR/repo"        # usado pelos botões Atualizar/Desinstalar
 ok "Arquivos instalados"
 
 # 4. Config padrão (não sobrescreve se já existir)
@@ -45,12 +50,9 @@ if [ ! -f "$CONFIG_DIR/config.json" ]; then
 JSON
 fi
 
-# 5. include na waybar + autostart do eww
+# 5. include na waybar + autostart do eww (formato Lua do Omarchy)
 add_include
-if ! grep -q "eww --config $EWW_DIR daemon" "$HYPR_AUTOSTART" 2>/dev/null; then
-  echo "exec-once = eww --config $EWW_DIR daemon" >> "$HYPR_AUTOSTART"
-  ok "eww daemon adicionado ao autostart"
-fi
+add_autostart
 
 # 6. Configuração interativa (TUI)
 run_config

@@ -2,9 +2,10 @@
 
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum Phase {
+    #[default]
     Work,
     ShortBreak,
     LongBreak,
@@ -36,13 +37,15 @@ impl Phase {
 
 /// Decide a próxima fase.
 ///
-/// `completed_work` = total de focos concluídos (contando o que acabou de terminar).
-/// Após cada foco vem uma pausa: longa a cada `long_every` focos, curta caso contrário.
-/// Depois de qualquer pausa, volta ao foco.
+/// `completed_work` = total de focos concluídos (contando o que acabou de terminar,
+/// se contou — um foco pulado não incrementa). Após cada foco vem uma pausa: longa
+/// a cada `long_every` focos concluídos, curta caso contrário. Depois de qualquer
+/// pausa, volta ao foco. O guard `completed_work > 0` impede a pausa longa "de
+/// graça" ao pular o primeiro foco (0 é múltiplo de qualquer n).
 pub fn next_phase(current: Phase, completed_work: u64, long_every: u64) -> Phase {
     match current {
         Phase::Work => {
-            if long_every > 0 && completed_work.is_multiple_of(long_every) {
+            if long_every > 0 && completed_work > 0 && completed_work.is_multiple_of(long_every) {
                 Phase::LongBreak
             } else {
                 Phase::ShortBreak
@@ -61,6 +64,12 @@ mod tests {
         assert_eq!(next_phase(Phase::Work, 1, 4), Phase::ShortBreak);
         assert_eq!(next_phase(Phase::Work, 2, 4), Phase::ShortBreak);
         assert_eq!(next_phase(Phase::Work, 3, 4), Phase::ShortBreak);
+    }
+
+    #[test]
+    fn zero_completed_work_never_long_break() {
+        // Foco pulado sem nenhum concluído: 0 é múltiplo de 4, mas não merece pausa longa.
+        assert_eq!(next_phase(Phase::Work, 0, 4), Phase::ShortBreak);
     }
 
     #[test]

@@ -33,10 +33,14 @@ fn bar_class(state: &State) -> &'static str {
 pub fn waybar_json(state: &State, now: u64, cfg: &Config) -> String {
     let progress = state.progress(now, cfg);
     let text = format!("{} {}", glyph_for(progress), mmss(state.remaining(now)));
+    let done_in_cycle = if cfg.long_every > 0 { state.completed_work % cfg.long_every } else { 0 };
     let tooltip = format!(
-        "{} — {}",
+        "{} — {} · {} restante · {}/{} focos até a pausa longa",
         state.phase.label(),
-        if state.running { "em andamento" } else { "pausado" }
+        if state.running { "em andamento" } else { "pausado" },
+        mmss(state.remaining(now)),
+        done_in_cycle,
+        cfg.long_every,
     );
     serde_json::json!({
         "text": text,
@@ -52,6 +56,8 @@ pub fn waybar_json(state: &State, now: u64, cfg: &Config) -> String {
 pub fn eww_json(state: &State, now: u64, cfg: &Config) -> String {
     serde_json::json!({
         "mmss": mmss(state.remaining(now)),
+        // O circular-progress do eww espera 0–100, não a fração 0.0–1.0 de
+        // State::progress — não "simplificar" removendo o ×100.
         "percent": (state.progress(now, cfg) * 100.0).round() as u64,
         "phase": state.phase.key(),
         "phase_label": state.phase.label(),

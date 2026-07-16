@@ -1,11 +1,16 @@
 ;; Pomodoro — popup do eww.
-;; Lê o estado de `pomo get` (1x/s) e dispara comandos `pomo …` nos botões.
+;; Lê o estado de `pomo get` (só enquanto o popup está aberto) e dispara
+;; comandos `pomo …` nos botões. As variáveis são atualizadas pelo open.sh.
+
+(defvar popup_aberto false)
+(defvar confirm_uninstall false)
+(defvar updating false)
+(defvar active_tab 0)
 
 (defpoll estado :interval "500ms"
+  :run-while popup_aberto
   :initial `{"mmss":"25:00","percent":100,"phase":"work","phase_label":"Foco","running":false,"work":25,"short":5,"long":15,"long_every":4,"auto_start_next":false}`
   `~/.local/bin/pomo get`)
-
-(defvar active_tab 0)
 
 ;; ---------------- Aba Pomodoro ----------------
 (defwidget pomodoro_tab []
@@ -29,7 +34,7 @@
       (label :halign "start" :hexpand true :class "cfg-name" :wrap true :text name)
       (label :halign "end" :class "cfg-val" :text "${value} ${unit}"))
     (scale :min min :max max :value value :round-digits 0 :draw-value false
-           :onchange "~/.local/bin/pomo config set ${key} {}")))
+           :onchange "~/.config/eww/pomodoro/actions.sh setcfg ${key} {} &")))
 
 (defwidget config_tab []
   (box :orientation "v" :space-evenly false :class "tab-body"
@@ -38,11 +43,33 @@
     (slider_row :name "Pausa longa" :value {estado.long} :min 10 :max 45 :unit "min" :key "long")
     (slider_row :name "Ciclos até a pausa longa" :value {estado.long_every} :min 2 :max 8 :unit "" :key "long_every")
     (box :class "cfg-toggle" :space-evenly false
-      (label :halign "start" :hexpand true :class "cfg-name" :wrap true :text "Auto-iniciar a próxima fase")
+      ;; :width segura o size request do label: sem isso o texto numa linha só
+      ;; alarga a janela inteira além dos 290px (o wrap só age sob restrição).
+      (label :halign "start" :hexpand true :class "cfg-name" :wrap true :width 180
+             :text "Auto-iniciar a próxima fase")
       (button :class "switch" :valign "center"
               :onclick "~/.local/bin/pomo config set auto_start_next ${estado.auto_start_next ? 'false' : 'true'}"
         (box :class "track ${estado.auto_start_next ? 'on' : 'off'}" :space-evenly false
-          (box :class "knob ${estado.auto_start_next ? 'on' : 'off'}"))))))
+          (box :class "knob ${estado.auto_start_next ? 'on' : 'off'}"))))
+    (manage_zone)))
+
+;; Zona de manutenção: atualizar o app e desinstalar (com confirmação inline).
+(defwidget manage_zone []
+  (box :orientation "v" :space-evenly false :class "cfg-zone"
+    (box :space-evenly true :spacing 8 :visible {!confirm_uninstall}
+      (button :class "a-btn" :onclick "~/.config/eww/pomodoro/actions.sh update &"
+        {updating ? "Atualizando…" : "󰚰 Atualizar"})
+      ;; "Remover" e nao "Desinstalar": o rotulo curto e o que da respiro ao
+      ;; botao sem inflar o width request da janela (290px justos).
+      (button :class "a-btn danger"
+              :onclick "eww -c ~/.config/eww/pomodoro update confirm_uninstall=true"
+        "󰩺 Remover"))
+    (box :orientation "v" :space-evenly false :spacing 8 :visible {confirm_uninstall}
+      (label :class "confirm-q" :halign "center" :wrap true :width 240
+             :text "Remover o pomodoro da waybar? Config e estado são preservados.")
+      (box :space-evenly true :spacing 8
+        (button :class "a-btn" :onclick "eww -c ~/.config/eww/pomodoro update confirm_uninstall=false" "Cancelar")
+        (button :class "a-btn danger-solid" :onclick "~/.config/eww/pomodoro/actions.sh uninstall &" "Sim, remover")))))
 
 ;; ---------------- Janela ----------------
 (defwidget tabbar []
@@ -53,21 +80,27 @@
 (defwidget root []
   (box :orientation "v" :space-evenly false :class "card"
     (tabbar)
-    (stack :selected active_tab :transition "slideleft" :same-size true
+    ;; same-size esticaria a aba Pomodoro até a altura da Config (com a zona
+    ;; de manutenção, +100px de espaço morto) — cada aba fica na sua altura.
+    (stack :selected active_tab :transition "slideleft" :same-size false
       (pomodoro_tab)
       (config_tab))))
 
+;; Sem :height na geometry: o height é um PISO (a janela nunca encolhe abaixo
+;; dele) — com 430px fixos, a aba Config (menor) ficava com um vazio embaixo.
+;; Cada aba usa sua altura natural; o tamanho do anel garante a da Pomodoro.
 (defwindow pomodoro
   :monitor 0
   :stacking "overlay"
-  :geometry (geometry :y "40px" :width "290px" :height "430px" :anchor "top center")
+  :geometry (geometry :y "40px" :width "290px" :anchor "top center")
   (root))
 
-;; Fundo transparente que fecha o popup ao clicar fora dele.
+;; Fundo invisível que fecha o popup ao clicar fora dele (via open.sh, que
+;; também reseta as variáveis do popup).
 (defwindow backdrop
   :monitor 0
   :stacking "overlay"
   :focusable false
   :geometry (geometry :width "100%" :height "100%")
-  (eventbox :onclick "eww -c ~/.config/eww/pomodoro close pomodoro backdrop"
+  (eventbox :onclick "~/.config/eww/pomodoro/open.sh"
     (box :class "backdrop")))

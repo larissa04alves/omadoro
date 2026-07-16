@@ -42,13 +42,18 @@ impl Config {
         }
     }
 
-    /// Persiste no disco (cria o diretório se necessário).
+    /// Persiste no disco (cria o diretório se necessário) de forma atômica
+    /// (tmp + rename): o slider do popup dispara escritas em rajada enquanto
+    /// `pomo get`/`tick` leem concorrentemente — uma leitura de arquivo
+    /// truncado cairia silenciosamente nos defaults.
     pub fn save(&self) -> std::io::Result<()> {
         let p = Config::path();
         if let Some(dir) = p.parent() {
             fs::create_dir_all(dir)?;
         }
-        fs::write(p, serde_json::to_string_pretty(self).unwrap())
+        let tmp = p.with_extension(format!("json.tmp.{}", std::process::id()));
+        fs::write(&tmp, serde_json::to_string_pretty(self).unwrap())?;
+        fs::rename(tmp, p)
     }
 
     /// Ajusta um campo por nome (usado por `pomo config set <chave> <valor>`).
@@ -77,6 +82,11 @@ fn parse_minutes(value: &str) -> Result<u64, String> {
     let n: u64 = value.parse().map_err(|_| format!("valor inválido: {value}"))?;
     if n == 0 {
         return Err("duração deve ser >= 1 minuto".into());
+    }
+    // Sem teto, um valor absurdo vira um `end` que o tick nunca alcança
+    // (timer "rodando" para sempre).
+    if n > 24 * 60 {
+        return Err("duração deve ser <= 1440 minutos (24h)".into());
     }
     Ok(n)
 }
@@ -113,6 +123,8 @@ mod tests {
         let mut c = Config::default();
         assert!(c.set("work", "0").is_err());
         assert!(c.set("work", "abc").is_err());
+        assert!(c.set("work", "1441").is_err());
+        assert!(c.set("work", "1440").is_ok());
         assert!(c.set("long_every", "0").is_err());
         assert!(c.set("chave_inexistente", "1").is_err());
     }

@@ -10,16 +10,33 @@ use serde::{Deserialize, Serialize};
 use std::fs;
 use std::path::PathBuf;
 
+/// Um buraco entre ticks maior que isto significa que o PC esteve
+/// desligado/suspenso: a fase volta ao tempo cheio, pausada.
+const GAP_SECS: u64 = 120;
+/// Cadência de persistência do heartbeat (`last_tick`) enquanto roda.
+const PERSIST_EVERY: u64 = 30;
+/// Teto de sanidade para `remaining` vindo do disco.
+const MAX_REMAINING: u64 = 24 * 3600;
+
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
 pub struct State {
+    #[serde(default)]
     pub phase: Phase,
+    #[serde(default)]
     pub running: bool,
     /// Epoch (segundos) em que a fase termina, quando `running`.
+    #[serde(default)]
     pub end: u64,
     /// Segundos restantes, usado quando pausado.
+    #[serde(default)]
     pub remaining: u64,
     /// Focos concluídos no ciclo atual (para a cadência da pausa longa).
+    #[serde(default)]
     pub completed_work: u64,
+    /// Último tick visto (epoch), persistido a cada [`PERSIST_EVERY`] enquanto
+    /// roda. Serve só para detectar desligamento/suspend ([`GAP_SECS`]).
+    #[serde(default)]
+    pub last_tick: u64,
 }
 
 /// Transição de fase, devolvida por [`State::tick`] para disparar notificação/som.
@@ -27,6 +44,14 @@ pub struct State {
 pub struct Transition {
     pub ended: Phase,
     pub started: Phase,
+}
+
+/// Resultado de um tick: a eventual transição de fase e se o estado mudou
+/// (e portanto precisa ser salvo).
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TickResult {
+    pub transition: Option<Transition>,
+    pub dirty: bool,
 }
 
 impl State {
@@ -38,6 +63,7 @@ impl State {
             end: 0,
             remaining: duration_secs(Phase::Work, cfg),
             completed_work: 0,
+            last_tick: 0,
         }
     }
 
@@ -52,18 +78,27 @@ impl State {
 
     pub fn load(cfg: &Config) -> State {
         match fs::read_to_string(State::path()) {
-            Ok(s) => serde_json::from_str(&s).unwrap_or_else(|_| State::initial(cfg)),
+            Ok(s) => serde_json::from_str(&s)
+                .map(|mut st: State| {
+                    // Sanidade contra arquivo editado/corrompido.
+                    st.remaining = st.remaining.min(MAX_REMAINING);
+                    st
+                })
+                .unwrap_or_else(|_| State::initial(cfg)),
             Err(_) => State::initial(cfg),
         }
     }
 
-    /// Grava de forma atômica (tmp + rename) para não corromper em leitura concorrente.
+    /// Grava de forma atômica (tmp + rename) para não corromper em leitura
+    /// concorrente. O tmp leva o PID no nome: waybar (tick), eww (get) e os
+    /// botões do popup rodam processos `pomo` simultâneos. Trade-off aceito:
+    /// um kill -9 entre write e rename deixa um tmp órfão inofensivo para trás.
     pub fn save(&self) -> std::io::Result<()> {
         let p = State::path();
         if let Some(dir) = p.parent() {
             fs::create_dir_all(dir)?;
         }
-        let tmp = p.with_extension("json.tmp");
+        let tmp = p.with_extension(format!("json.tmp.{}", std::process::id()));
         fs::write(&tmp, serde_json::to_string_pretty(self).unwrap())?;
         fs::rename(tmp, p)
     }
@@ -93,8 +128,9 @@ impl State {
             self.running = false;
             self.end = 0;
         } else {
-            self.end = now + self.remaining;
+            self.end = now.saturating_add(self.remaining);
             self.running = true;
+            self.last_tick = now;
         }
     }
 
@@ -102,13 +138,16 @@ impl State {
     pub fn restart(&mut self, now: u64, cfg: &Config) {
         self.remaining = duration_secs(self.phase, cfg);
         if self.running {
-            self.end = now + self.remaining;
+            self.end = now.saturating_add(self.remaining);
+            self.last_tick = now;
         }
     }
 
-    /// Pula manualmente para a próxima fase e a inicia (botão ⏭).
+    /// Pula manualmente para a próxima fase e a inicia (botão ⏭). Um foco
+    /// pulado NÃO conta para a cadência da pausa longa (pomodoro pulado não é
+    /// pomodoro feito).
     pub fn skip(&mut self, now: u64, cfg: &Config) {
-        self.advance(now, cfg, true);
+        self.advance(now, cfg, true, false);
     }
 
     /// Zera o ciclo: foco pausado no tempo cheio.
@@ -131,27 +170,52 @@ impl State {
         false
     }
 
-    /// Chamado a cada segundo pela waybar. Se a fase terminou, avança e devolve
-    /// a transição (para notificação); caso contrário devolve `None`.
-    pub fn tick(&mut self, now: u64, cfg: &Config) -> Option<Transition> {
-        if self.running && now >= self.end {
-            Some(self.advance(now, cfg, cfg.auto_start_next))
-        } else {
-            None
+    /// Chamado a cada segundo pela waybar. Detecta desligamento/suspend (buraco
+    /// entre ticks), avança a fase quando ela termina e mantém o heartbeat.
+    /// `dirty` indica que o chamador deve persistir o estado.
+    pub fn tick(&mut self, now: u64, cfg: &Config) -> TickResult {
+        if !self.running {
+            return TickResult { transition: None, dirty: false };
         }
+        // PC desligado/suspenso no meio da fase (buraco entre ticks) ou estado
+        // corrompido (`end` mais distante do que qualquer fase legítima): volta
+        // ao tempo cheio, pausado, sem notificação.
+        let gap = self.last_tick > 0 && now.saturating_sub(self.last_tick) > GAP_SECS;
+        let end_absurdo = self.end.saturating_sub(now) > MAX_REMAINING;
+        if gap || end_absurdo {
+            self.remaining = duration_secs(self.phase, cfg);
+            self.running = false;
+            self.end = 0;
+            self.last_tick = 0;
+            return TickResult { transition: None, dirty: true };
+        }
+        if now >= self.end {
+            let t = self.advance(now, cfg, cfg.auto_start_next, true);
+            return TickResult { transition: Some(t), dirty: true };
+        }
+        // Heartbeat: persiste o último tick de tempos em tempos (não a cada
+        // segundo) só para a detecção de gap acima.
+        if now.saturating_sub(self.last_tick) >= PERSIST_EVERY {
+            self.last_tick = now;
+            return TickResult { transition: None, dirty: true };
+        }
+        TickResult { transition: None, dirty: false }
     }
 
-    /// Avança para a próxima fase. `start_running` decide se ela já começa a contar.
-    fn advance(&mut self, now: u64, cfg: &Config, start_running: bool) -> Transition {
+    /// Avança para a próxima fase. `start_running` decide se ela já começa a
+    /// contar; `count_work` decide se um foco encerrado entra na cadência da
+    /// pausa longa (true no fim natural, false no skip).
+    fn advance(&mut self, now: u64, cfg: &Config, start_running: bool, count_work: bool) -> Transition {
         let ended = self.phase;
-        if ended.is_work() {
+        if ended.is_work() && count_work {
             self.completed_work += 1;
         }
         let started = next_phase(ended, self.completed_work, cfg.long_every);
         self.phase = started;
         self.remaining = duration_secs(started, cfg);
         self.running = start_running;
-        self.end = if start_running { now + self.remaining } else { 0 };
+        self.end = if start_running { now.saturating_add(self.remaining) } else { 0 };
+        self.last_tick = if start_running { now } else { 0 };
         Transition { ended, started }
     }
 }
@@ -217,14 +281,14 @@ mod tests {
         let c = cfg();
         let mut s = State::initial(&c);
         s.toggle(0); // foco rodando, end=1500
-        assert_eq!(s.tick(1499, &c), None);
-        let t = s.tick(1500, &c).unwrap();
+        assert_eq!(s.tick(1499, &c).transition, None);
+        let t = s.tick(1500, &c).transition.unwrap();
         assert_eq!(t.ended, Phase::Work);
         assert_eq!(t.started, Phase::ShortBreak);
         assert_eq!(s.completed_work, 1);
         // auto_start_next=false por padrão → pausado, não re-dispara
         assert!(!s.running);
-        assert_eq!(s.tick(2000, &c), None);
+        assert_eq!(s.tick(2000, &c), TickResult { transition: None, dirty: false });
     }
 
     #[test]
@@ -235,8 +299,9 @@ mod tests {
         s.toggle(0);
         let mut long_seen = false;
         for _ in 0..12 {
-            let now = s.end; // salta para o fim da fase corrente
-            if let Some(t) = s.tick(now, &c) {
+            let now = s.end; // salta para o fim da fase corrente…
+            s.last_tick = now - 1; // …simulando que a waybar ticou até lá
+            if let Some(t) = s.tick(now, &c).transition {
                 if t.started == Phase::LongBreak {
                     long_seen = true;
                     break;
@@ -255,6 +320,76 @@ mod tests {
         assert_eq!(s.phase, Phase::ShortBreak);
         assert!(s.running);
         assert_eq!(s.remaining(0), 5 * 60);
+        // foco pulado não conta para a cadência da pausa longa
+        assert_eq!(s.completed_work, 0);
+    }
+
+    #[test]
+    fn skipped_work_never_earns_long_break() {
+        let c = cfg(); // long_every = 4
+        let mut s = State::initial(&c);
+        for _ in 0..10 {
+            s.skip(1000, &c); // pula tudo, nunca completa um foco
+            assert_ne!(s.phase, Phase::LongBreak);
+        }
+        assert_eq!(s.completed_work, 0);
+    }
+
+    #[test]
+    fn gap_resets_phase_paused_without_transition() {
+        let c = cfg();
+        let mut s = State::initial(&c);
+        s.toggle(1000); // rodando, end=2500
+        assert!(s.tick(1030, &c).dirty); // heartbeat: last_tick=1030
+        // "religou o PC" 10h depois: fase cheia, pausada, sem notificação
+        let r = s.tick(1030 + 36_000, &c);
+        assert_eq!(r.transition, None);
+        assert!(r.dirty);
+        assert!(!s.running);
+        assert_eq!(s.remaining, 25 * 60);
+        assert_eq!(s.end, 0);
+    }
+
+    #[test]
+    fn short_gap_does_not_reset() {
+        let c = cfg();
+        let mut s = State::initial(&c);
+        s.toggle(1000);
+        assert!(s.tick(1030, &c).dirty); // last_tick=1030
+        let r = s.tick(1090, &c); // 60s de buraco: dentro da tolerância
+        assert_eq!(r.transition, None);
+        assert!(s.running);
+    }
+
+    #[test]
+    fn heartbeat_persists_periodically_not_every_tick() {
+        let c = cfg();
+        let mut s = State::initial(&c);
+        s.toggle(1000); // last_tick=1000
+        assert!(!s.tick(1001, &c).dirty);
+        assert!(!s.tick(1029, &c).dirty);
+        assert!(s.tick(1030, &c).dirty); // 30s desde o último registro
+        assert!(!s.tick(1031, &c).dirty);
+    }
+
+    #[test]
+    fn paused_state_never_dirties_on_tick() {
+        let c = cfg();
+        let mut s = State::initial(&c);
+        assert_eq!(s.tick(999_999, &c), TickResult { transition: None, dirty: false });
+    }
+
+    #[test]
+    fn absurd_end_resets_phase_paused() {
+        let c = cfg();
+        let mut s = State::initial(&c);
+        s.toggle(1000);
+        s.end = 1000 + 200 * 3600; // state.json corrompido: fim daqui a 200h
+        let r = s.tick(1001, &c);
+        assert_eq!(r.transition, None);
+        assert!(r.dirty);
+        assert!(!s.running);
+        assert_eq!(s.remaining, 25 * 60);
     }
 
     #[test]

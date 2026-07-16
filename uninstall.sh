@@ -15,16 +15,17 @@ cfg="$WAYBAR_DIR/config.jsonc"
 style="$WAYBAR_DIR/style.css"
 if [ -f "$cfg" ]; then
   backup "$cfg"
-  sed -i 's/"custom\/pomodoro", //g' "$cfg"                      # tira o módulo do array
-  sed -i "s#\"$WAYBAR_DIR/pomodoro.jsonc\", ##g" "$cfg"          # tira o include
+  remove_module "$cfg"                                            # tira o módulo do array
+  sed -i -E "s#\"$WAYBAR_DIR/pomodoro.jsonc\",?[[:space:]]*##g" "$cfg"  # tira o include
+  tidy_arrays "$cfg"                                              # sem vírgula órfã no array
 fi
 if [ -f "$style" ]; then
   backup "$style"
   sed -i '/>>> pomodoro >>>/,/<<< pomodoro <<</d' "$style"       # tira o bloco de cor
 fi
 
-# Reverte o autostart
-[ -f "$HYPR_AUTOSTART" ] && sed -i "\#eww --config $EWW_DIR daemon#d" "$HYPR_AUTOSTART"
+# Reverte o autostart (Lua atual e .conf legado)
+remove_autostart
 
 # Remove os arquivos instalados
 rm -f "$BIN_DIR/pomo" "$WAYBAR_DIR/pomodoro.jsonc"
