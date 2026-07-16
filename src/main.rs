@@ -59,8 +59,13 @@ fn main() {
         Cmd::Tick => {
             let t_now = now();
             let mut state = State::load(&cfg);
-            if let Some(transition) = state.tick(t_now, &cfg) {
-                let _ = state.save();
+            let result = state.tick(t_now, &cfg);
+            if result.dirty {
+                if let Err(e) = state.save() {
+                    eprintln!("pomo: falha ao salvar estado: {e}");
+                }
+            }
+            if let Some(transition) = result.transition {
                 notify(transition);
             }
             println!("{}", waybar_json(&state, t_now, &cfg));
@@ -80,14 +85,18 @@ fn main() {
                 eprintln!("pomo: {e}");
                 std::process::exit(1);
             }
-            // Reflete a nova duração no timer atual, se estiver pausado no início.
-            let mut state = State::load(&cfg);
-            if state.resync_duration(&cfg, &updated) {
-                let _ = state.save();
-            }
+            // Config primeiro: se falhar, o estado não fica ressincronizado
+            // com uma duração que nunca chegou ao disco.
             if let Err(e) = updated.save() {
                 eprintln!("pomo: falha ao salvar config: {e}");
                 std::process::exit(1);
+            }
+            // Reflete a nova duração no timer atual, se estiver pausado no início.
+            let mut state = State::load(&cfg);
+            if state.resync_duration(&cfg, &updated) {
+                if let Err(e) = state.save() {
+                    eprintln!("pomo: falha ao salvar estado: {e}");
+                }
             }
         }
         Cmd::Configure => match pomo::configure::run() {
