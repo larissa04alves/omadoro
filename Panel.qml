@@ -39,13 +39,20 @@ Panel {
 
   // Congelado com o popup fechado: senão cada linha reavalia a cada segundo
   // atrás de uma janela que ninguém vê.
-  property double closedNow: Date.now()
-  onOpenedChanged: if (!opened) root.closedNow = Date.now()
-  readonly property var vm: opened && service
-    ? service.view
-    : Model.view(Model.initialTimer(root.cfg), root.cfg, root.closedNow)
+  // service.view já é recalculada a cada segundo para a barra; congelar uma
+  // cópia aqui só criaria uma segunda verdade (e um anel que re-anima ao abrir).
+  readonly property var vm: service ? service.view : Model.view(Model.initialTimer(root.cfg), root.cfg, Date.now())
 
   property string tab: "pomodoro" // não existe TabBar; ButtonGroup + visible
+
+  // Ui/Panel.switchPanel passa `root` (este objeto aninhado) ao host, que só
+  // reconhece o widget montado no slot: sem este override, Tab dentro do
+  // popup é um no-op silencioso.
+  function switchPanel(direction) {
+    if (root.bar && typeof root.bar.switchPanelFrom === "function")
+      return root.bar.switchPanelFrom(root.barIdentity, direction)
+    return false
+  }
 
   function commitSetting(name, value) {
     if (root.service) root.service.setConfig(name, value)
@@ -61,14 +68,18 @@ Panel {
     contentWidth: panel.fittedContentWidth(Style.space(300))
     contentHeight: panel.fittedContentHeight(column.implicitHeight)
 
-    // KeyboardPanel e não PopupCard: a aba Config tem quatro sliders e um
-    // toggle que querem foco de teclado, e Escape só existe via
-    // PanelKeyCatcher, que precisa de foco para receber a tecla.
+    // KeyboardPanel e não PopupCard: Escape só chega pelo PanelKeyCatcher, que
+    // precisa de foco, e PopupCard não tem foco nenhum. O catcher consome as
+    // setas e Enter mesmo sem handler, então eles ganham um uso: setas trocam
+    // a aba, Enter/Espaço pausa ou retoma.
     PanelKeyCatcher {
       id: keys
       anchors.fill: parent
       onCloseRequested: root.close()
       onTabRequested: function(direction) { root.switchPanel(direction) }
+      onMoveRequested: function(dx, dy) { if (dx !== 0) root.tab = dx > 0 ? "config" : "pomodoro" }
+      onActivateRequested: if (root.service) root.service.toggle()
+      onReturnRequested: if (root.service) root.service.toggle()
 
       Column {
         id: column

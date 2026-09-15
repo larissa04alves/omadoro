@@ -33,6 +33,8 @@ omarchy bar move othavi0.pomodoro --section center
 | Clique do meio na barra | Reinicia a fase atual |
 | `Esc` no popup | Fecha o popup |
 | `Tab` no popup | Vai para o próximo painel da barra |
+| Setas no popup | Trocam de aba |
+| `Enter` ou `Espaço` no popup | Pausa ou retoma |
 
 ## Configurar
 
@@ -73,18 +75,18 @@ variável estiver definida.
 Os mesmos verbos que o popup usa estão no IPC da shell:
 
 ```bash
-omarchy-shell pomodoro <open|close|toggle|pause|start|skip|restart|reset|health>
+omarchy-shell pomodoro <open|close|toggle|toggleRunning|pause|start|skip|restart|reset|health>
 ```
 
-`open`, `close` e `toggle` mexem na janela. `pause` alterna entre contar e
-parar, `start` só começa se estiver parado, `skip` pula a fase, `restart`
-devolve a fase ao tempo cheio, `reset` zera o ciclo. `health` imprime fase,
-se está rodando e quanto falta, em JSON.
+`open`, `close` e `toggle` mexem na janela. `toggleRunning` alterna entre
+contar e parar, `pause` só pausa, `start` só começa se estiver parado, `skip`
+pula a fase, `restart` devolve a fase ao tempo cheio, `reset` zera o ciclo.
+`health` imprime fase, se está rodando e quanto falta, em JSON.
 
 Para ligar um atalho, em `~/.config/hypr/bindings.conf`:
 
 ```
-bind = SUPER, P, exec, omarchy-shell pomodoro toggle
+bind = SUPER, P, exec, omarchy-shell pomodoro toggleRunning
 ```
 
 ## Atualizar e remover

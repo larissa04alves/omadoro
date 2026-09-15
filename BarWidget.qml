@@ -2,7 +2,6 @@ pragma ComponentBehavior: Bound
 import QtQuick
 import qs.Commons
 import qs.Ui
-import "Model.js" as Model
 
 // Uma instância por monitor. O id do plugin vive só no manifest.json: nunca
 // se atribui `moduleName` aqui — o host injeta (via ModuleSlot.injectProps),
@@ -16,10 +15,12 @@ BarWidget {
   readonly property var service: bar && bar.shell && typeof bar.shell.serviceFor === "function"
     ? bar.shell.serviceFor(moduleName) : null
 
-  // Antes do serviço existir (primeiro frame) mostra um estado parado em vez
-  // de travar em bindings sobre `null`.
-  readonly property var fallbackView: Model.view(Model.initialTimer(Model.normalizeConfig({})), Model.normalizeConfig({}), Date.now())
-  readonly property var view: service ? service.view : fallbackView
+  // Sem serviço (um frame no boot, ou o Service.qml falhou ao montar) o chip
+  // mostra "--:--" e diz por quê no tooltip, em vez de fingir um timer pausado.
+  readonly property var view: service ? service.view : ({
+    mmss: "--:--", progress: 0, phase: "work", running: false,
+    tooltip: "Pomodoro: serviço não carregou (veja o log da omarchy-shell)"
+  })
 
   // Style.bar.iconCanvas é o mesmo 16px que o protótipo do anel (ring.qml)
   // provou nítido com CurveRenderer — o "slot de ícone" natural da barra.
@@ -100,6 +101,7 @@ BarWidget {
         progress: root.view.progress
         phase: root.view.phase
         paused: !root.view.running
+        baseColor: button.foreground
       }
 
       Text {
@@ -109,8 +111,10 @@ BarWidget {
         anchors.verticalCenter: parent.verticalCenter
         textFormat: Text.PlainText
         text: root.view.mmss
-        color: root.bar ? root.bar.foreground : Color.foreground
-        font.family: root.bar ? root.bar.fontFamily : Style.font.family
+        // button.foreground segue bar.barForeground, que muda com a barra
+        // transparente; bar.foreground não.
+        color: button.foreground
+        font.family: button.fontFamily
         font.pixelSize: Style.font.bodySmall
       }
     }

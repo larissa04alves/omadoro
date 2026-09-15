@@ -23,9 +23,13 @@ Item {
   // Uma cor de tema, três intensidades: sem paleta própria. O foco é o
   // accent cheio, a pausa é o mesmo accent a 55%, e pausado desbota para o
   // foreground — o que continua legível em qualquer tema do Omarchy.
+  // Quem desenha na barra passa a cor da barra (que muda com a barra
+  // transparente); o popup fica com os tokens do tema.
+  property color baseColor: Color.foreground
+  property color accentColor: Color.accent
   readonly property color fill: root.paused
-    ? Util.alpha(Color.foreground, 0.55)
-    : (root.phase === "work" ? Color.accent : Util.alpha(Color.accent, 0.55))
+    ? Util.alpha(root.baseColor, 0.55)
+    : (root.phase === "work" ? root.accentColor : Util.alpha(root.accentColor, 0.55))
 
   // O tween anima a contagem segundo a segundo; ele é desligado num salto
   // grande (troca de fase, reinício, restauração) para o anel não dar meia
@@ -48,7 +52,7 @@ Item {
 
     ShapePath {
       strokeWidth: root.thickness
-      strokeColor: Util.alpha(Color.foreground, 0.12)
+      strokeColor: Util.alpha(root.baseColor, 0.12)
       fillColor: "transparent"
       capStyle: ShapePath.RoundCap
       PathAngleArc {

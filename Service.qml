@@ -54,12 +54,20 @@ Item {
   onConfigChanged: {
     var prev = root.previousConfig
     root.previousConfig = root.config
+    if (prev.sound !== root.config.sound) {
+      root.soundBroken = false
+      root.soundFailures = 0
+    }
     if (!root.ready) return
     root.adopt(Model.step(root.timer, { kind: "config", next: root.config }, prev, root.nowMs))
   }
 
   // ---- A superfície pública: timer é opaco para a UI, view é o que ela lê.
   property var timer: Model.initialTimer(root.config)
+  // Bool plano, escrito em adopt: `timer` troca de referência a cada tick e
+  // uma binding de precision sobre ele (ou sobre view) fecha um laço que a
+  // shell loga como "Binding loop detected" (medido ao vivo nas duas formas).
+  property bool running: false
   property bool ready: false
   readonly property var view: Model.view(root.timer, root.config, root.nowMs)
 
@@ -70,7 +78,7 @@ Item {
   // intervalos não faria isso.
   SystemClock {
     id: clock
-    precision: root.view.running ? SystemClock.Seconds : SystemClock.Minutes
+    precision: root.running ? SystemClock.Seconds : SystemClock.Minutes
     onDateChanged: {
       root.nowMs = date.getTime()
       root.dispatch("tick")
@@ -85,6 +93,9 @@ Item {
       console.warn("pomodoro: unknown event '" + kind + "'")
       return false
     }
+    // Parado, o SystemClock só bate por minuto: um toggle/skip com o nowMs
+    // desse último tick encurtaria a fase nova em até 59 s.
+    root.nowMs = Date.now()
     root.adopt(Model.step(root.timer, { kind: kind }, root.config, root.nowMs))
     return true
   }
@@ -101,20 +112,16 @@ Item {
   // um painel de outro monitor não pode ficar com um retrato velho.
   function setConfig(key, value) {
     if (!root.shell || typeof root.shell.updateEntryInline !== "function") return false
-    var entry = {
-      work: root.config.work,
-      short: root.config.short,
-      long: root.config.long,
-      longEvery: root.config.longEvery,
-      autoStartNext: root.config.autoStartNext,
-      sound: root.config.sound
-    }
+    // updateEntryInline substitui a entrada inteira: partir da entrada viva
+    // preserva chaves que não são nossas (o host descarta o `id` sozinho).
+    var entry = root.mergedSettings(root.shell.barConfig)
     entry[key] = value
     return root.shell.updateEntryInline(root.pluginId, entry)
   }
 
   function adopt(stepResult) {
     root.timer = stepResult.timer
+    root.running = stepResult.timer.clock.state === "running"
     var effects = stepResult.effects
     // A ordem importa: o redutor sempre devolve persist antes de notify/sound
     // (se a shell morrer entre os dois, perde-se um aviso, nunca duplica-se).
@@ -124,7 +131,11 @@ Item {
   function runEffect(effect) {
     if (effect.kind === "persist") {
       root.saveWanted = true
-      if (root.dirReady) saveTimer.restart()
+      if (!root.dirReady) return
+      // Troca de fase e reparo gravam já: o debounce existe para o heartbeat
+      // e para rajadas de clique, não para a janela entre gravar e avisar.
+      if (effect.reason === "phase" || effect.reason === "repair") { saveTimer.stop(); saveTimer.triggered() }
+      else saveTimer.restart()
     } else if (effect.kind === "notify") {
       root.sendNotification(effect)
     } else if (effect.kind === "sound") {
@@ -139,7 +150,7 @@ Item {
   // pausa parada — a notificação vira o botão "começar". `start` é
   // idempotente, então clicar duas vezes não reinicia nada.
   function sendNotification(effect) {
-    var exec = (root.omarchyPath || "/usr/share/omarchy") + "/shell/bin/omarchy-shell"
+    var exec = (root.omarchyPath || "/usr/share/omarchy") + "/bin/omarchy-shell"
     Quickshell.execDetached([
       "omarchy-notification-send",
       "--app-name", "Pomodoro",
@@ -253,7 +264,10 @@ Item {
     function close(): void { if (root.shell) root.shell.hide(root.pluginId) }
     function toggle(): void { if (root.shell) root.shell.toggle(root.pluginId, "{}") }
 
-    function pause(): void { root.dispatch("toggle") }
+    // `pause` só pausa e `start` só inicia: um bind chamado "pause" que
+    // começasse a contar seria uma armadilha. `toggleRunning` alterna.
+    function pause(): void { if (root.timer.clock.state === "running") root.dispatch("toggle") }
+    function toggleRunning(): void { root.dispatch("toggle") }
     function start(): void { root.dispatch("start") }
     function skip(): void { root.dispatch("skip") }
     function restart(): void { root.dispatch("restart") }
@@ -263,7 +277,7 @@ Item {
     function health(): string {
       return JSON.stringify({
         phase: root.timer.phase,
-        running: root.view.running,
+        running: root.timer.clock.state === "running",
         remainingMs: Model.remainingMs(root.timer, root.nowMs),
         completedWork: root.timer.completedWork
       })

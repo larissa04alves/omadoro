@@ -329,7 +329,9 @@ function stepTick(timer, config, now) {
           glyph: glyphFor(result.transition.started),
           urgency: "normal"
         },
-        { kind: "sound", file: config.sound ? plainLabel(config.sound, 1024) : DEFAULT_SOUND }
+        // O caminho vai como "$1" para o bash, nunca re-tokenizado: sanitizar aqui
+        // só corromperia caminhos válidos (espaços duplos, "<", ">").
+        { kind: "sound", file: config.sound || DEFAULT_SOUND }
       ]
     }
   }
@@ -429,8 +431,10 @@ function view(timer, config, now) {
   var remaining = remainingMs(timer, now)
   var cycleTotal = config.longEvery
   var cycleDone = cycleTotal > 0 ? timer.completedWork % cycleTotal : 0
-  var tooltip = phaseLabel(timer.phase) + " — " + (running ? "em andamento" : "pausado") +
-    " · " + mmss(remaining) + " restante · " + cycleDone + "/" + cycleTotal + " focos até a pausa longa"
+  // Sem o MM:SS: o host só lê o tooltip ao entrar com o mouse, então um tempo
+  // vivo aqui congelaria ao lado de um rótulo que continua contando.
+  var tooltip = phaseLabel(timer.phase) + " · " + (running ? "em andamento" : "pausado") +
+    " · " + cycleDone + "/" + cycleTotal + " focos até a pausa longa"
   return {
     mmss: mmss(remaining),
     progress: progress(timer, config, now),
