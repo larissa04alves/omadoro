@@ -2,11 +2,11 @@
 
 ## O que é
 
-Timer pomodoro para a waybar do Omarchy (Hyprland). Um módulo na barra mostra o
-anel de progresso + contagem regressiva; o clique abre um popup eww com duas
-abas: **Pomodoro** (anel, pausar/pular/reiniciar) e **Config** (durações,
-auto-início). O cérebro é um binário Rust (`pomo`) sem daemon; o estado guarda o
-timestamp de fim da fase.
+Timer pomodoro para a barra do Omarchy (Hyprland). Um widget na barra mostra o
+anel de progresso e a contagem regressiva. O clique abre um popup com duas
+abas: **Pomodoro** (anel, pausar, pular, reiniciar) e **Config** (durações,
+auto-início). O plugin roda dentro da omarchy-shell, sem binário próprio. O
+estado guarda o instante em que a fase termina, não um contador.
 
 ## Quem usa
 
@@ -15,26 +15,33 @@ tema escuro. O popup aparece por segundos (ajustar/conferir o timer) e some.
 
 ## Registro
 
-`product` — a UI serve a tarefa (controlar o timer) e deve desaparecer nela.
-Nada de decoração: microinterações só para transmitir estado (rodando/pausado,
-foco/pausa, hover/press), 150–250 ms, sem blur/sombra pesada (é layer-shell GTK3
-via eww, custo de composição importa).
+`product`: a UI serve a tarefa (controlar o timer) e deve desaparecer nela.
+Nada de decoração. Microinterações só para transmitir estado (rodando ou
+pausado, foco ou pausa, hover e press), 150 a 250 ms, sem blur nem sombra
+pesada. O widget vive dentro do processo da shell, então custo de composição
+importa.
 
-## Identidade visual (existente, preservar)
+## Identidade visual
 
-- 3 temas em `themes/*/eww.scss` + `_theme.scss` ativo: **Sage** (verde-musgo),
-  **Lavanda** (lilás), **Névoa-mar** (teal, instalado hoje). Tokens: `$bg`,
-  `$card-edge`, `$ink`, `$ink-dim`, `$track`, `$accent`, `$accent-break`,
-  `$accent-ink`.
-- Fonte única: JetBrainsMono Nerd Font (a fonte do Omarchy).
-- Card escuro 24px de raio, anel `circular-progress` de 14px de espessura,
-  botões circulares (play/pause em `$accent`).
+- Sem paleta própria. As cores vêm do tema do Omarchy, por `Color.accent` e
+  `Color.foreground`. Trocar de tema troca a cor do timer junto.
+- Uma cor em três intensidades: `Color.accent` cheio no foco, `Color.accent` a
+  55 % na pausa, `Color.foreground` a 55 % quando o timer está pausado.
+- Anel de progresso desenhado com `QtQuick.Shapes`. No popup a espessura é
+  14 px. Na barra o mesmo componente assume o tamanho do slot de ícone.
+- Fonte e escala vêm da shell (`bar.fontFamily`, `Style.space`). Nada de
+  tamanho fixo em pixel fora do anel.
 
 ## Restrições técnicas de UI
 
-- GTK3 CSS via eww: subconjunto de CSS (sem `box-shadow` custom em layer-shell
-  barato, sem `transform`); `transition` de cor/margin funciona.
-- O popup abre/fecha via `open.sh` (waybar on-click) com uma janela `backdrop`
-  invisível que fecha ao clicar fora — sem escurecer a tela (decisão de
-  produto, 2026-07-16).
-- Atualização de dados: `defpoll` de 500 ms **somente com o popup aberto**.
+- QML dentro da omarchy-shell, via Quickshell. A view usa os componentes de
+  `Ui/` da shell (`Panel`, `KeyboardPanel`, `PanelKeyCatcher`, `PanelSlider`,
+  `WidgetButton`, `ButtonGroup`), não controles próprios.
+- O popup é um `KeyboardPanel` e não um `PopupCard`, porque a aba Config tem
+  sliders e um interruptor que precisam de foco de teclado, e porque `Esc` só
+  chega pelo `PanelKeyCatcher`, que precisa de foco.
+- Não existe backdrop próprio. Clique fora e `Esc` vêm da shell.
+- O popup congela o próprio relógio enquanto está fechado, para não reavaliar
+  bindings atrás de uma janela que ninguém vê.
+- O anel e o MM:SS da barra continuam atualizando com o popup fechado: a
+  notificação de fim de fase é o produto e tem de disparar sem a janela aberta.
