@@ -9,6 +9,12 @@ Não há binário, não há daemon próprio e não há passo de build. O plugin 
 dentro da shell que você já usa, com a lógica em um arquivo JavaScript e a
 view em QML.
 
+![Anel e contagem na barra do Omarchy, com o popup aberto na aba Pomodoro](docs/img/barra.png)
+
+| Aba Pomodoro | Aba Config |
+| --- | --- |
+| ![Popup na aba Pomodoro: anel, 24:32, Foco e os botões reiniciar, pausar e pular](docs/img/popup-pomodoro.png) | ![Popup na aba Config: sliders de foco, pausa curta, pausa longa e ciclos, e o interruptor de auto-iniciar](docs/img/popup-config.png) |
+
 ## Instalar
 
 Requer Omarchy 4 com a omarchy-shell como barra (testado em 4.0.3).
@@ -25,6 +31,10 @@ omarchy bar move larissa04alves.pomodoro --section center
 ```
 
 ## Usar
+
+O anel esvazia conforme a fase passa. A cor de destaque do tema cheia é foco,
+a meia força é pausa, e o anel desbota quando o timer está parado. Trocar o
+tema do Omarchy troca a cor do timer junto.
 
 | Gesto | O que faz |
 | --- | --- |
