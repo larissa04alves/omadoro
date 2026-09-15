@@ -1,0 +1,30 @@
+{
+  "schemaVersion": 1,
+  "id": "othavi0.pomodoro",
+  "name": "Pomodoro",
+  "version": "1.0.0",
+  "author": "othavi0",
+  "license": "MIT",
+  "description": "Work/break pomodoro timer with a progress ring in the bar.",
+  "kinds": ["service", "bar-widget"],
+  "keepLoaded": true,
+  "entryPoints": {
+    "service": "Service.qml",
+    "barWidget": "BarWidget.qml"
+  },
+  "barWidget": {
+    "displayName": "Pomodoro",
+    "description": "Work/break timer with progress ring",
+    "category": "Time",
+    "allowMultiple": false,
+    "defaultSection": "right",
+    "defaults": {
+      "work": 25,
+      "short": 5,
+      "long": 15,
+      "longEvery": 4,
+      "autoStartNext": false,
+      "sound": ""
+    }
+  }
+}
