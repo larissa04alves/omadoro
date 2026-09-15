@@ -2,7 +2,7 @@
 
 ## O que é
 
-Timer pomodoro para a barra do Omarchy (Hyprland). Um widget na barra mostra o
+Omadoro é o pomodoro do Omarchy (Hyprland). Um widget na barra mostra o
 anel de progresso e a contagem regressiva. O clique abre um popup com duas
 abas: **Pomodoro** (anel, pausar, pular, reiniciar) e **Config** (durações,
 auto-início). O plugin roda dentro da omarchy-shell, sem binário próprio. O

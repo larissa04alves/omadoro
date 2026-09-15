@@ -5,6 +5,15 @@ atualizações depois dela. Fonte: `SUBMISSION.md`, `SECURITY.md` e
 `VERIFICATION.md` do repositório `omacom/omarchy-plugin-marketplace`, lidos
 em 2026-09-15.
 
+## Estado da listagem
+
+- 2026-09-15: primeira submissão aberta pela larissa, issue
+  [omacom/omarchy-plugin-marketplace#7069](https://github.com/omacom/omarchy-plugin-marketplace/issues/7069),
+  categoria Productivity, tags bar e quickshell. Aguarda os dois bots e o
+  `approved-and-verified` de um mantenedor.
+
+Atualize esta lista a cada submissão, verificação ou promoção de commit.
+
 ## O que o marketplace exige do repositório
 
 - Repositório público no GitHub, submetido pela URL raiz, sem `/tree/...`.
