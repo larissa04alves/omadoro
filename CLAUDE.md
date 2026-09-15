@@ -1,34 +1,40 @@
 # CLAUDE.md — erros já cometidos aqui (não repetir)
 
-- **SCSS: acento só em comentário `//`.** O grass (compilador do eww) emite
-  `@charset "UTF-8"` no CSS se algo não-ASCII vazar pela saída (comentários
-  `/* */` vazam) e o GTK rejeita a regra — o daemon sobe mas não renderiza nada.
-- **Autostart do Hyprland é `autostart.lua`** (`o.launch_on_start(...)`, padrão
-  do omarchy-install-service-sunshine). O `autostart.conf` existe mas está morto
-  desde a migração do Omarchy para Lua — escrever `exec-once` nele falha em
-  silêncio (foi a causa da travada do primeiro clique).
-- **`circular-progress` do eww espera `:value` 0–100**, não a fração 0.0–1.0 de
-  `State::progress` — por isso o `×100` em `render.rs`.
-- **`update.sh` roda inteiro dentro de `main()`** chamada na última linha: o
-  `git pull` troca o próprio arquivo em execução e o bash não pode continuar
-  lendo um script que mudou sob seus pés.
-- **Botões do popup descem do daemon eww** (autostart do Hyprland), não do shell
-  interativo: PATH mínimo (sem mise/rustup) — `update.sh` exporta
-  `~/.cargo/bin:~/.local/bin` por isso.
-- **Os seds da waybar precisam tolerar o formato real** do `config.jsonc`
-  (módulo em linha própria, vírgula sem espaço) — o padrão antigo
-  `"custom/pomodoro", ` com espaço nunca casava na desinstalação.
-- **Backdrop SEMPRE antes do popup no open.sh.** Na mesma camada overlay a
-  última janela aberta fica por cima: popup→backdrop deixou o backdrop
-  invisível interceptando TODOS os cliques do popup (cada clique fechava tudo).
-- **`stack :same-size true` estica todas as abas para a maior** — a zona de
-  botões da aba Config esticou a janela de 430 para 535px de espaço morto.
-- **A janela eww cresce até o width request natural dos filhos**: label com
-  `:wrap` mas sem `:width` e padding lateral gordo nos botões alargavam a aba
-  Config de 290 para 326px (o card "engordava" ao trocar de aba). Segurar com
-  `:width` no label e padding lateral mínimo em botão `space-evenly`.
-- **`:height` da geometry é um PISO, não um alvo**: a janela nunca encolhe
-  abaixo dele — com `:height "430px"`, a aba Config (~383px naturais) ficava
-  com ~50px de vazio abaixo dos botões. Sem `:height`, cada aba assenta na
-  altura natural. Corolário: medir 430 nas duas abas NÃO prova ausência de
-  espaço morto — olhar onde o conteúdo termina, não só o xywh da janela.
+- **`schemaVersion` é o número `1`, não a string `"1"`.** A string reprova nos
+  dois validadores (o do host e o do `omarchy-plugin-validate`) e o plugin nem
+  chega a instalar.
+- **Symlink dentro do diretório do plugin é recusado pelo validador**
+  (`omarchy-plugin-validate:121`, exceto sob `.git`). O laço de desenvolvimento
+  é `rsync` via `scripts/dev.sh`, nunca um link do repo para
+  `~/.config/omarchy/plugins`.
+- **`keepLoaded: true` congela o hot-reload do `Service.qml`.**
+  `unloadPluginServices()` pula de propósito os serviços com `keepLoaded`, então
+  depois do reload o serviço continua rodando o código antigo. `BarWidget.qml` e
+  `Panel.qml` recarregam ao salvar; `Service.qml` só com `omarchy restart shell`.
+- **Um `Loader` não preenche propriedade `required`.** `KeyboardPanel` declara
+  `anchorItem` e `bar` como `required`, e um objeto que não constrói vira um
+  clique sem efeito e sem erro. Por isso a raiz de `Panel.qml` é um `Ui/Panel`
+  (zero `required`) com o `KeyboardPanel` aninhado dentro, e o `BarWidget`
+  injeta as propriedades à mão depois do `onLoaded`, testando `"nome" in alvo`.
+- **`MouseArea` própria nunca recebe clique.** O `MouseArea` externo do
+  `ModuleSlot` engole o press. O alvo tem de ser um `Ui/WidgetButton` (ou um
+  item passado a `bar.registerClickTarget`); esquerdo, direito e meio chegam no
+  mesmo `onPressed(button)`.
+- **Um só `IpcHandler`, e ele mora no `Service`.** `Panel.qml` leva
+  `manageIpc: false`: o painel é um por monitor, e o brinde do `Ui/Panel`
+  registraria o mesmo alvo IPC duas vezes em duas telas. Os verbos de janela
+  voltam pelo `shell.summon`, `shell.hide` e `shell.toggle`.
+- **`updateEntryInline` só remenda a entrada in place com
+  `allowMultiple: false`.** Com entradas duplicadas o host reconstrói os widgets
+  e o popup fecha no meio do arrasto. Gravar configuração em `released`, nunca
+  em `moved`.
+- **`seenAt` não avança a cada tick, só no heartbeat e quando a fase troca.**
+  Empurrar `seenAt` em todo tick faz `now - seenAt` nunca alcançar os 30 s: o
+  heartbeat não dispara, o último instante visto não vai a disco e o buraco de
+  120 s depois de um suspend deixa de ser detectado.
+- **`qmllint` e `qmltestrunner` só existem em `/usr/lib/qt6/bin`.** Não há nada
+  no PATH desta máquina, nem stub, nem versão Qt5. Nunca `command -v qmllint`.
+- **Ruído esperado do `qmllint`.** `Unqualified access` e `missing-property` em
+  `bar`, `shell` e `settings` são propriedades injetadas pelo host: filtrar a
+  saída, não tentar consertar o código. Os dois plugins de terceiros que servem
+  de precedente fazem o mesmo.

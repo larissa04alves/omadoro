@@ -1,139 +1,162 @@
-# 🍅 Pomodoro para Waybar
+# Pomodoro para a barra do Omarchy
 
-Timer pomodoro para a waybar do Omarchy (Hyprland). Um anel de progresso com a
-contagem regressiva fica na barra; ao clicar, abre um popup com duas abas —
-**Pomodoro** (anel + pausar/pular/voltar) e **Config** (durações).
+Timer pomodoro como plugin da omarchy-shell. Um anel de progresso com a
+contagem regressiva fica na barra. O clique abre um popup com duas abas,
+**Pomodoro** (anel, pausar, pular, reiniciar) e **Config** (durações e
+auto-início).
 
-O cérebro é um binário em Rust (`pomo`); o popup é feito em [eww](https://github.com/elkowar/eww).
+Não há binário, não há daemon próprio e não há passo de build. O plugin roda
+dentro da shell que você já usa, com a lógica em um arquivo JavaScript e a
+view em QML.
+
+## Instalar
+
+Requer Omarchy 4 com a omarchy-shell como barra (testado em 4.0.3).
+
+```bash
+omarchy plugin add https://github.com/larissa04alves/pomodoro-timer.git --enable
+```
+
+O `--enable` pergunta em qual seção da barra colocar o widget. O padrão é
+`right`. Para mover depois:
+
+```bash
+omarchy bar move othavi0.pomodoro --section center
+```
+
+## Usar
+
+| Gesto | O que faz |
+| --- | --- |
+| Clique esquerdo na barra | Abre ou fecha o popup |
+| Clique direito na barra | Pausa ou retoma sem abrir o popup |
+| Clique do meio na barra | Reinicia a fase atual |
+| `Esc` no popup | Fecha o popup |
+| `Tab` no popup | Vai para o próximo painel da barra |
+
+## Configurar
+
+A aba **Config** do popup tem quatro sliders e um interruptor:
+
+| Opção | Faixa |
+| --- | --- |
+| Foco | 5 a 60 minutos |
+| Pausa curta | 1 a 20 minutos |
+| Pausa longa | 10 a 45 minutos |
+| Ciclos até a pausa longa | 2 a 8 |
+| Auto-iniciar a próxima fase | ligado ou desligado |
+
+As opções são gravadas inline na entrada do plugin em
+`~/.config/omarchy/shell.json`, o mesmo arquivo que guarda o resto do layout
+da barra. A entrada é editável à mão, ou pela CLI da barra:
+
+```bash
+omarchy bar set othavi0.pomodoro work 30
+```
+
+Formato da entrada:
+
+```jsonc
+{ "id": "othavi0.pomodoro", "work": 25, "short": 5, "long": 15,
+  "longEvery": 4, "autoStartNext": false }
+```
+
+A chave `sound` aceita o caminho de um arquivo de áudio. Vazia, o plugin toca
+`complete.oga` do freedesktop.
+
+O estado de execução não fica aí. Fase, relógio e ciclo ficam em
+`~/.local/state/othavi0.pomodoro/state.json`, ou sob `$XDG_STATE_HOME` se a
+variável estiver definida.
+
+## Atalhos
+
+Os mesmos verbos que o popup usa estão no IPC da shell:
+
+```bash
+omarchy-shell pomodoro <open|close|toggle|pause|start|skip|restart|reset|health>
+```
+
+`open`, `close` e `toggle` mexem na janela. `pause` alterna entre contar e
+parar, `start` só começa se estiver parado, `skip` pula a fase, `restart`
+devolve a fase ao tempo cheio, `reset` zera o ciclo. `health` imprime fase,
+se está rodando e quanto falta, em JSON.
+
+Para ligar um atalho, em `~/.config/hypr/bindings.conf`:
+
+```
+bind = SUPER, P, exec, omarchy-shell pomodoro toggle
+```
+
+## Atualizar e remover
+
+```bash
+omarchy plugin update othavi0.pomodoro && omarchy restart shell
+```
+
+O `restart` é obrigatório. O plugin declara `keepLoaded: true` para que o
+timer continue contando quando o widget é desmontado, e o efeito colateral é
+que o serviço antigo sobrevive ao reload. Sem reiniciar a shell, o código
+novo não entra.
+
+```bash
+omarchy plugin remove othavi0.pomodoro
+```
 
 ## Como funciona
 
-Não há daemon contando segundos. O estado guarda o *timestamp* de fim da fase,
-então "quanto falta" é só `fim − agora`. Quem dá o tique é a própria waybar,
-que chama `pomo tick` a cada segundo:
+O plugin tem três peças. `Service.qml` é o único por shell: ele guarda o
+timer, escreve o arquivo de estado, dispara notificação e som e registra o
+alvo IPC. `BarWidget.qml` é um por monitor e desenha o anel, o MM:SS e o
+popup. `Model.js` é a lógica pura, sem Qt, e decide toda transição.
 
-- **`pomo tick`** (waybar) — avança o tempo, dispara notificação + som ao virar a
-  fase e imprime o JSON da barra.
-- **`pomo get`** (eww) — só leitura; alimenta o anel e o tempo do popup
-  (o poll só roda enquanto o popup está aberto).
-- **`pomo toggle | skip | restart`** — os botões do popup e o clique direito na
-  barra (`reset` existe só como comando de terminal).
+A fase guarda o instante em que termina, em epoch de milissegundos, e não um
+contador. "Quanto falta" é uma subtração. Daí vêm os comportamentos que
+importam:
 
-Se o PC desligar (ou suspender por mais de ~2 min) com o timer rodando, ao voltar
-a fase reaparece **pausada no tempo cheio** — o tempo não corre com o PC desligado.
-Um foco **pulado** não conta para a cadência da pausa longa.
+- Suspender ou desligar a máquina por mais de 120 segundos rebobina a fase
+  para o tempo cheio, pausada, sem notificação. A fase não terminou, a
+  máquina saiu.
+- Reiniciar a shell retoma de onde estava. O estado vai a disco a cada 30
+  segundos e em toda ação do usuário.
+- Um foco pulado não conta para a pausa longa.
+- Mudar uma duração só afeta uma fase pausada que ainda está no tempo cheio.
+  Nos outros casos a mudança vale no próximo ciclo.
+- A notificação e o som só saem no fim natural de uma fase. A notificação
+  vem do `omarchy-notification-send` e o som de `pw-play`, `paplay`, `mpv` ou
+  `ffplay`, o que existir. Clicar na notificação inicia a próxima fase.
 
-Config em `~/.config/pomodoro/config.json`, estado em `~/.local/state/pomodoro/state.json`.
-
-## Requisitos
-
-- **Rust** (`cargo`) — para compilar. `sudo pacman -S rust`
-- **eww** — instalado automaticamente via `yay -S eww-git` se faltar
-- `jq` — usado para abrir o popup no monitor onde está o cursor
-- `notify-send` (libnotify) e um player de som (`paplay`/`canberra`) — normalmente já vêm no Omarchy
-
-## Instalação
-
-```bash
-git clone <repo> pomodoro-timer-waybar
-cd pomodoro-timer-waybar
-./install.sh
-```
-
-O instalador compila o binário, instala o popup e, no fim, pergunta:
-
-1. **Onde** colocar o timer na waybar — esquerda, centro ou direita;
-2. **Qual cor** — Sage (verde-musgo), Lavanda (lilás) ou Névoa-mar (teal).
-
-Tudo que ele edita (`config.jsonc` e `style.css` da waybar) recebe um backup
-`.bak.<timestamp>` antes (só os 3 mais recentes são mantidos). O autostart do
-daemon eww entra em `~/.config/hypr/autostart.lua`, o formato Lua do Omarchy
-atual — o `autostart.conf` antigo não é mais lido pelo Hyprland.
-
-## Uso
-
-- **Clique** no módulo da barra → abre/fecha o popup.
-- **Clique direito** no módulo → pausa/retoma sem abrir o popup.
-- No popup: **↺** reinicia a fase atual, **⏸/▶** pausa/retoma, **⏭** pula para a próxima.
-- Aba **Config**: sliders para os tempos, o toggle de "iniciar a próxima fase
-  automaticamente" (mudanças valem no próximo ciclo) e os botões
-  **Atualizar** (git pull + recompila + reinstala, preservando posição/cor;
-  o resultado chega por notificação) e **Remover** (com confirmação inline;
-  a config em `~/.config/pomodoro` e o estado em `~/.local/state/pomodoro`
-  são preservados).
-
-## Reconfigurar / atualizar / desinstalar
-
-```bash
-./configure.sh        # troca posição e cor, sem recompilar
-./update.sh           # o mesmo que o botão Atualizar do popup
-./update.sh --force   # reinstala tudo mesmo sem commit novo
-./uninstall.sh        # reverte os patches e remove os arquivos
-```
-
-Os botões do popup encontram o repositório pelo caminho gravado em
-`~/.config/pomodoro/repo` no install — se você mover o clone, rode `./install.sh`
-de novo.
-
-## Migrar uma máquina que está numa versão antiga
-
-Numa instalação feita antes dos botões Atualizar/Remover existirem, basta
-puxar a versão nova e forçar a reinstalação — posição, cor, durações e o
-estado do timer são preservados:
-
-```bash
-cd <pasta-do-clone> && git pull && ./update.sh --force
-```
-
-O `--force` também migra o que a versão antiga não tinha: o autostart do
-daemon eww no formato Lua (a versão antiga escrevia num `.conf` que o
-Hyprland não lê mais — era a causa da travada no primeiro clique) e o
-caminho do repositório usado pelos botões do popup.
-
-Pré-condição: o Omarchy da máquina já deve usar a config Lua do Hyprland
-(`~/.config/hypr/hyprland.lua`) — o script avisa se não encontrar.
-
-## Comandos
-
-Mudar **cor ou posição** (TUI com setas + Enter):
-
-```bash
-cd ~/Projects/pomodoro-timer-waybar && ./configure.sh
-```
-
-Mudar **durações** pelo terminal (valem no próximo ciclo, ou já no ato se o timer
-estiver pausado no início):
-
-```bash
-pomo config set work 25              # foco (min, 1 a 1440)
-pomo config set short 5              # pausa curta
-pomo config set long 15              # pausa longa
-pomo config set long_every 4         # focos até a pausa longa
-pomo config set auto_start_next true # inicia a próxima fase sozinho
-```
-
-Controlar o timer (o mesmo que os botões do popup):
-
-```bash
-pomo toggle    # pausar / retomar
-pomo skip      # pular fase
-pomo restart   # reiniciar a fase atual
-pomo reset     # zerar o ciclo
-```
-
-Internos (não precisa rodar à mão): `pomo tick` e `pomo get` são usados pela
-waybar/eww; `pomo configure` é a TUI chamada por `install.sh`/`configure.sh`.
+As cores vêm do tema do Omarchy. O plugin não tem paleta própria.
 
 ## Desenvolvimento
 
 ```bash
-cargo test     # testes unitários (fases, tempo, formatação)
-cargo clippy   # lint
-cargo build --release
+node test/model.test.js   # 36 testes da lógica pura, sem Qt
+scripts/verify.sh         # validate, qmllint, testes e render do anel
+scripts/verify.sh --live  # o acima mais o smoke na shell rodando
+scripts/dev.sh --restart  # copia o checkout para o diretório do plugin
 ```
 
-Estrutura: `src/` (Rust: `config`, `state`, `phase`, `render`, `configure`),
-`eww/` (popup: `eww.yuck`, `eww.scss`, `open.sh`, `actions.sh`), `themes/`
-(as 3 paletas), `waybar/` (módulo), scripts na raiz (`install.sh`,
-`configure.sh`, `update.sh`, `uninstall.sh`, `lib.sh` compartilhado).
-Gotchas já cometidos e regras do projeto: `CLAUDE.md` e `PRODUCT.md`.
+`scripts/dev.sh` faz `rsync` para `~/.config/omarchy/plugins` porque o
+validador recusa qualquer symlink dentro do diretório do plugin. Aceita
+`--enable` e `--restart`.
+
+Salvar `BarWidget.qml` ou `Panel.qml` recarrega o plugin em poucos
+milissegundos. `Service.qml` não recarrega: por causa do `keepLoaded`, é
+`omarchy restart shell` toda vez.
+
+O `qmllint` e o `qmltestrunner` ficam em `/usr/lib/qt6/bin`. Não há nenhum
+dos dois no PATH desta máquina.
+
+## Smoke manual
+
+Depois de instalar, confira na tela:
+
+1. A barra mostra o anel e o tempo no formato MM:SS.
+2. O clique esquerdo abre o popup na aba Pomodoro.
+3. Arrastar um slider da aba Config não fecha o popup.
+4. Com o timer rodando, `omarchy restart shell` retoma a contagem de onde
+   estava, sem notificação espúria.
+
+## Licença
+
+MIT. Veja [LICENSE](LICENSE).
