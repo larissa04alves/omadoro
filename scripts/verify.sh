@@ -111,7 +111,7 @@ QML_IMPORT_PATH="$imports" QML2_IMPORT_PATH="$imports" QT_QPA_PLATFORM=offscreen
 [[ -f $ring_png ]] || fail "ring harness did not produce $ring_png"
 # Fora do repo de propósito: o script não deve sujar `git status` a cada
 # rodada.
-verify_out="${XDG_CACHE_HOME:-$HOME/.cache}/pomodoro-timer-verify"
+verify_out="${XDG_CACHE_HOME:-$HOME/.cache}/omadoro-verify"
 mkdir -p "$verify_out"
 cp "$ring_png" "$verify_out/ring.png"
 echo "ring png: $verify_out/ring.png"
@@ -123,7 +123,7 @@ if [[ "${1:-}" == "--live" ]] && command -v omarchy-shell >/dev/null 2>&1 \
   id=$(jq -r '.id' "$here/manifest.json")
   out_dir=${OUT:-$imports}
 
-  health_before=$(omarchy-shell pomodoro health)
+  health_before=$(omarchy-shell omadoro health)
   jq -e . >/dev/null 2>&1 <<<"$health_before" || fail "pomodoro health did not return parseable JSON: $health_before"
 
   omarchy-shell shell summon "$id" '{}' >/dev/null
@@ -136,8 +136,8 @@ if [[ "${1:-}" == "--live" ]] && command -v omarchy-shell >/dev/null 2>&1 \
     echo "verify: grim not found, skipping popup screenshot" >&2
   fi
 
-  omarchy-shell pomodoro skip >/dev/null
-  health_after=$(omarchy-shell pomodoro health)
+  omarchy-shell omadoro skip >/dev/null
+  health_after=$(omarchy-shell omadoro health)
   [[ "$health_before" != "$health_after" ]] || fail "health did not change after skip (IPC -> service -> reducer -> disk not wired)"
   echo "live: ok"
   echo "  before: $health_before"

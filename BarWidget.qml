@@ -19,7 +19,7 @@ BarWidget {
   // mostra "--:--" e diz por quê no tooltip, em vez de fingir um timer pausado.
   readonly property var view: service ? service.view : ({
     mmss: "--:--", progress: 0, phase: "work", running: false,
-    tooltip: "Pomodoro: serviço não carregou (veja o log da omarchy-shell)"
+    tooltip: "Omadoro: serviço não carregou (veja o log da omarchy-shell)"
   })
 
   // Style.bar.iconCanvas é o mesmo 16px que o protótipo do anel (ring.qml)

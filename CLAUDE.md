@@ -38,3 +38,15 @@
   `bar`, `shell` e `settings` são propriedades injetadas pelo host: filtrar a
   saída, não tentar consertar o código. Os dois plugins de terceiros que servem
   de precedente fazem o mesmo.
+
+## Agent skills
+
+### Issue tracker
+
+Issues vivem nas GitHub Issues deste repo, via `gh`. Veja
+`docs/agents/issue-tracker.md`.
+
+### Domain docs
+
+Contexto único: `CONTEXT.md` na raiz e `docs/adr/`. Veja
+`docs/agents/domain.md`.
