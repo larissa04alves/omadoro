@@ -53,7 +53,7 @@ fi
 # missing-property é filtrado por SÍMBOLO (os injetados pelo host e os
 # membros dinâmicos de Style/Loader.item), não por categoria: um nome de
 # propriedade digitado errado num componente Ui tem de reprovar aqui.
-known_members='shell|iconCanvas|bodySmall|body|displayLarge|family|fontFamily|foreground|open|close|toggle|opened|closeForPopoutSwitch|popoutSwitchClosing|moduleName|switchPanelFrom'
+known_members='shell|iconCanvas|bodySmall|body|displayLarge|iconLarge|family|fontFamily|foreground|open|close|toggle|opened|closeForPopoutSwitch|popoutSwitchClosing|moduleName|switchPanelFrom'
 filtered=$(grep -vE "Unqualified access|Member \"($known_members)\" not found|QProcess::ExitStatus|Type PanelWindow is not creatable|^\s|^$|^import |^pragma " <<<"$output" || true)
 total_lines=$(printf '%s\n' "$output" | grep -c . || true)
 kept_lines=$(printf '%s\n' "$filtered" | grep -c . || true)

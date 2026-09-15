@@ -142,8 +142,12 @@ Panel {
             anchors.horizontalCenter: parent.horizontalCenter
             spacing: Style.space(12)
 
+            // Três ícones da mesma família (Nerd Font, via iconText do Button)
+            // no mesmo corpo: emoji no lugar de ícone sai da fonte da shell e
+            // vem colorido de outra fonte.
             Button {
-              text: "󰜉" // restart
+              iconText: "󰜉"
+              tooltipText: "Reiniciar a fase"
               bordered: true
               foreground: root.fg
               fontFamily: root.fontFamily
@@ -151,7 +155,9 @@ Panel {
             }
 
             Button {
-              text: root.vm.running ? "⏸" : "▶"
+              iconText: root.vm.running ? "󰏤" : "󰐊"
+              iconSize: Style.font.iconLarge
+              tooltipText: root.vm.running ? "Pausar" : "Retomar"
               bordered: true
               selected: true
               foreground: root.fg
@@ -160,7 +166,8 @@ Panel {
             }
 
             Button {
-              text: "󰒭" // skip
+              iconText: "󰒭"
+              tooltipText: "Pular a fase"
               bordered: true
               foreground: root.fg
               fontFamily: root.fontFamily
