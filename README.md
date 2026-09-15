@@ -21,7 +21,7 @@ O `--enable` pergunta em qual seção da barra colocar o widget. O padrão é
 `right`. Para mover depois:
 
 ```bash
-omarchy bar move othavi0.pomodoro --section center
+omarchy bar move larissa04alves.pomodoro --section center
 ```
 
 ## Usar
@@ -53,13 +53,13 @@ As opções são gravadas inline na entrada do plugin em
 da barra. A entrada é editável à mão, ou pela CLI da barra:
 
 ```bash
-omarchy bar set othavi0.pomodoro work 30
+omarchy bar set larissa04alves.pomodoro work 30
 ```
 
 Formato da entrada:
 
 ```jsonc
-{ "id": "othavi0.pomodoro", "work": 25, "short": 5, "long": 15,
+{ "id": "larissa04alves.pomodoro", "work": 25, "short": 5, "long": 15,
   "longEvery": 4, "autoStartNext": false }
 ```
 
@@ -67,7 +67,7 @@ A chave `sound` aceita o caminho de um arquivo de áudio. Vazia, o plugin toca
 `complete.oga` do freedesktop.
 
 O estado de execução não fica aí. Fase, relógio e ciclo ficam em
-`~/.local/state/othavi0.pomodoro/state.json`, ou sob `$XDG_STATE_HOME` se a
+`~/.local/state/larissa04alves.pomodoro/state.json`, ou sob `$XDG_STATE_HOME` se a
 variável estiver definida.
 
 ## Atalhos
@@ -92,7 +92,7 @@ bind = SUPER, P, exec, omarchy-shell pomodoro toggleRunning
 ## Atualizar e remover
 
 ```bash
-omarchy plugin update othavi0.pomodoro && omarchy restart shell
+omarchy plugin update larissa04alves.pomodoro && omarchy restart shell
 ```
 
 O `restart` é obrigatório. O plugin declara `keepLoaded: true` para que o
@@ -101,7 +101,7 @@ que o serviço antigo sobrevive ao reload. Sem reiniciar a shell, o código
 novo não entra.
 
 ```bash
-omarchy plugin remove othavi0.pomodoro
+omarchy plugin remove larissa04alves.pomodoro
 ```
 
 ## Como funciona

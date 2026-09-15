@@ -21,7 +21,7 @@ Item {
 
   // O id vive só no manifest.json; este fallback existe apenas para o caso
   // (testes, injeção incompleta) em que `manifest` ainda não chegou.
-  readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "othavi0.pomodoro"
+  readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "larissa04alves.pomodoro"
 
   // ---- Configuração: lida de shell.json através da fachada do host, nunca
   //      escrita daqui a não ser por `setConfig`. Duas entradas do mesmo id
