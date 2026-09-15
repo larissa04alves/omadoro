@@ -21,7 +21,7 @@ Item {
 
   // O id vive só no manifest.json; este fallback existe apenas para o caso
   // (testes, injeção incompleta) em que `manifest` ainda não chegou.
-  readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "larissa04alves.pomodoro"
+  readonly property string pluginId: manifest && manifest.id ? String(manifest.id) : "larissa04alves.omadoro"
 
   // ---- Configuração: lida de shell.json através da fachada do host, nunca
   //      escrita daqui a não ser por `setConfig`. Duas entradas do mesmo id
@@ -90,7 +90,7 @@ Item {
   //      pass-through), e a fronteira valida contra Model.EVENTS.
   function dispatch(kind) {
     if (Model.EVENTS.indexOf(kind) === -1) {
-      console.warn("pomodoro: unknown event '" + kind + "'")
+      console.warn("omadoro: unknown event '" + kind + "'")
       return false
     }
     // Parado, o SystemClock só bate por minuto: um toggle/skip com o nowMs
@@ -153,7 +153,7 @@ Item {
     var exec = (root.omarchyPath || "/usr/share/omarchy") + "/bin/omarchy-shell"
     Quickshell.execDetached([
       "omarchy-notification-send",
-      "--app-name", "Pomodoro",
+      "--app-name", "Omadoro",
       "-g", effect.glyph,
       "-u", effect.urgency,
       "-t", "8000",
@@ -194,7 +194,7 @@ Item {
       root.soundFailures = root.soundFailures + 1
       if (exitCode === 3 || root.soundFailures >= 3) {
         root.soundBroken = true
-        console.warn("pomodoro: could not play sound (missing pw-play/paplay/mpv/ffplay, or file unreadable); silencing")
+        console.warn("omadoro: could not play sound (missing pw-play/paplay/mpv/ffplay, or file unreadable); silencing")
       }
     }
   }
@@ -236,7 +236,7 @@ Item {
       root.adopt(Model.restore("", root.config, Date.now()))
     }
     onSaveFailed: function(error) {
-      console.warn("pomodoro: could not write " + root.statePath + ": " + String(error))
+      console.warn("omadoro: could not write " + root.statePath + ": " + String(error))
     }
   }
 
@@ -258,7 +258,7 @@ Item {
   // ele é por monitor, e registrar o mesmo alvo duas vezes (dois monitores)
   // seria o bug que o chime evita da mesma forma.
   IpcHandler {
-    target: "pomodoro"
+    target: "omadoro"
 
     function open(): void { if (root.shell) root.shell.summon(root.pluginId, "{}") }
     function close(): void { if (root.shell) root.shell.hide(root.pluginId) }

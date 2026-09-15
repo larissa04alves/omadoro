@@ -1,4 +1,4 @@
-# Pomodoro para a barra do Omarchy
+# Omadoro, o pomodoro do Omarchy
 
 Timer pomodoro como plugin da omarchy-shell. Um anel de progresso com a
 contagem regressiva fica na barra. O clique abre um popup com duas abas,
@@ -20,14 +20,14 @@ view em QML.
 Requer Omarchy 4 com a omarchy-shell como barra (testado em 4.0.3).
 
 ```bash
-omarchy plugin add https://github.com/larissa04alves/pomodoro-timer.git --enable
+omarchy plugin add https://github.com/larissa04alves/omadoro.git --enable
 ```
 
 O `--enable` pergunta em qual seção da barra colocar o widget. O padrão é
 `right`. Para mover depois:
 
 ```bash
-omarchy bar move larissa04alves.pomodoro --section center
+omarchy bar move larissa04alves.omadoro --section center
 ```
 
 ## Usar
@@ -63,13 +63,13 @@ As opções são gravadas inline na entrada do plugin em
 da barra. A entrada é editável à mão, ou pela CLI da barra:
 
 ```bash
-omarchy bar set larissa04alves.pomodoro work 30
+omarchy bar set larissa04alves.omadoro work 30
 ```
 
 Formato da entrada:
 
 ```jsonc
-{ "id": "larissa04alves.pomodoro", "work": 25, "short": 5, "long": 15,
+{ "id": "larissa04alves.omadoro", "work": 25, "short": 5, "long": 15,
   "longEvery": 4, "autoStartNext": false }
 ```
 
@@ -77,7 +77,7 @@ A chave `sound` aceita o caminho de um arquivo de áudio. Vazia, o plugin toca
 `complete.oga` do freedesktop.
 
 O estado de execução não fica aí. Fase, relógio e ciclo ficam em
-`~/.local/state/larissa04alves.pomodoro/state.json`, ou sob `$XDG_STATE_HOME` se a
+`~/.local/state/larissa04alves.omadoro/state.json`, ou sob `$XDG_STATE_HOME` se a
 variável estiver definida.
 
 ## Atalhos
@@ -85,7 +85,7 @@ variável estiver definida.
 Os mesmos verbos que o popup usa estão no IPC da shell:
 
 ```bash
-omarchy-shell pomodoro <open|close|toggle|toggleRunning|pause|start|skip|restart|reset|health>
+omarchy-shell omadoro <open|close|toggle|toggleRunning|pause|start|skip|restart|reset|health>
 ```
 
 `open`, `close` e `toggle` mexem na janela. `toggleRunning` alterna entre
@@ -96,13 +96,13 @@ pula a fase, `restart` devolve a fase ao tempo cheio, `reset` zera o ciclo.
 Para ligar um atalho, em `~/.config/hypr/bindings.conf`:
 
 ```
-bind = SUPER, P, exec, omarchy-shell pomodoro toggleRunning
+bind = SUPER, P, exec, omarchy-shell omadoro toggleRunning
 ```
 
 ## Atualizar e remover
 
 ```bash
-omarchy plugin update larissa04alves.pomodoro && omarchy restart shell
+omarchy plugin update larissa04alves.omadoro && omarchy restart shell
 ```
 
 O `restart` é obrigatório. O plugin declara `keepLoaded: true` para que o
@@ -111,7 +111,7 @@ que o serviço antigo sobrevive ao reload. Sem reiniciar a shell, o código
 novo não entra.
 
 ```bash
-omarchy plugin remove larissa04alves.pomodoro
+omarchy plugin remove larissa04alves.omadoro
 ```
 
 ## Como funciona
