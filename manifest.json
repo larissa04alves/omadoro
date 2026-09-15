@@ -1,9 +1,9 @@
 {
   "schemaVersion": 1,
-  "id": "othavi0.pomodoro",
+  "id": "larissa04alves.pomodoro",
   "name": "Pomodoro",
   "version": "1.0.0",
-  "author": "othavi0",
+  "author": "larissa04alves",
   "license": "MIT",
   "description": "Work/break pomodoro timer with a progress ring in the bar.",
   "kinds": ["service", "bar-widget"],
