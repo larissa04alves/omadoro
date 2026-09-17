@@ -45,6 +45,8 @@ Panel {
 
   property string tab: "pomodoro" // não existe TabBar; ButtonGroup + visible
 
+  readonly property real sliderHeight: Style.space(36) // área de clique, não visual
+
   // Ui/Panel.switchPanel passa `root` (este objeto aninhado) ao host, que só
   // reconhece o widget montado no slot: sem este override, Tab dentro do
   // popup é um no-op silencioso.
@@ -145,7 +147,9 @@ Panel {
             // Três ícones da mesma família (Nerd Font, via iconText do Button)
             // no mesmo corpo: emoji no lugar de ícone sai da fonte da shell e
             // vem colorido de outra fonte.
+            // O Button dimensiona pelo glifo; o de reiniciar dá a medida.
             Button {
+              id: restartButton
               iconText: "󰜉"
               tooltipText: "Reiniciar a fase"
               bordered: true
@@ -155,8 +159,9 @@ Panel {
             }
 
             Button {
+              width: restartButton.implicitWidth
+              height: restartButton.implicitHeight
               iconText: root.vm.running ? "󰏤" : "󰐊"
-              iconSize: Style.font.iconLarge
               tooltipText: root.vm.running ? "Pausar" : "Retomar"
               bordered: true
               selected: true
@@ -166,6 +171,8 @@ Panel {
             }
 
             Button {
+              width: restartButton.implicitWidth
+              height: restartButton.implicitHeight
               iconText: "󰒭"
               tooltipText: "Pular a fase"
               bordered: true
@@ -181,7 +188,7 @@ Panel {
         Column {
           visible: root.tab === "config"
           width: parent.width
-          spacing: Style.space(16)
+          spacing: Style.space(8)
 
           ConfigSlider { label: "Tempo de foco"; configKey: "work"; minimum: 5; maximum: 60 }
           ConfigSlider { label: "Pausa curta"; configKey: "short"; minimum: 1; maximum: 20 }
@@ -203,11 +210,12 @@ Panel {
             PanelSlider {
               id: longEverySlider
               width: parent.width
+              height: root.sliderHeight
               bar: root.bar
               minimum: 2
               maximum: 8
               step: 1
-              integer: true
+              integer: false
               tickCount: 7
               value: root.cfg.longEvery
               onReleased: function(v) { root.commitSetting("longEvery", Math.round(v)) }
@@ -253,11 +261,13 @@ Panel {
     PanelSlider {
       id: slider
       width: parent.width
+      height: root.sliderHeight
       bar: root.bar
       minimum: field.minimum
       maximum: field.maximum
       step: 1
-      integer: true
+      // Contínuo: com integer o knob salta em degraus em vez de seguir o mouse.
+      integer: false
       value: root.cfg[field.configKey]
       // `released` grava uma vez, no mouse-up: uma escrita de shell.json por
       // pixel arrastado seria desperdício, e com `allowMultiple: false` uma

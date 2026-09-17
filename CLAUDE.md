@@ -32,6 +32,18 @@
   Empurrar `seenAt` em todo tick faz `now - seenAt` nunca alcançar os 30 s: o
   heartbeat não dispara, o último instante visto não vai a disco e o buraco de
   120 s depois de um suspend deixa de ser detectado.
+- **O host devolve `barConfig` uma escrita atrasado.** `syncPluginApis` roda
+  no `onShellConfigChanged` e lê `shell.barConfig` antes da binding reavaliar;
+  a `FileView` não reemite a própria gravação. Medido: três cliques seguidos, o
+  serviço sempre com o valor anterior. Por isso o `Service` guarda
+  `pendingEntry` (a entrada que acabou de gravar) e `setConfig` parte dela, não
+  do host: senão o segundo slider reverte o primeiro. Efeito colateral: edição
+  à mão do `shell.json` só aparece na próxima gravação ou no restart.
+- **Depois de `scripts/dev.sh` sem `--restart`, o popup desenha a build
+  anterior e o input vai para a nova.** Screenshot e clique não batem; teste de
+  ponteiro só depois de `--restart`. Não há `ydotool`; o ponteiro virtual wlr
+  (`zwlr_virtual_pointer_v1`, ~60 linhas de C) move e clica sem root, e
+  `hyprctl dispatch movecursor` está quebrado (parser Lua).
 - **`qmllint` e `qmltestrunner` só existem em `/usr/lib/qt6/bin`.** Não há nada
   no PATH desta máquina, nem stub, nem versão Qt5. Nunca `command -v qmllint`.
 - **Ruído esperado do `qmllint`.** `Unqualified access` e `missing-property` em

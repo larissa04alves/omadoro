@@ -45,7 +45,20 @@ Item {
     return out
   }
 
-  readonly property var config: Model.normalizeConfig(mergedSettings(root.shell ? root.shell.barConfig : null))
+  // O host devolve barConfig uma escrita atrasado (ver CLAUDE.md): a entrada
+  // que acabamos de gravar vale até ele devolver exatamente ela.
+  readonly property var hostEntry: mergedSettings(root.shell ? root.shell.barConfig : null)
+  property var pendingEntry: null
+  // Entrega atrasada de uma escrita nossa não é mudança externa.
+  property var writtenHistory: []
+  readonly property var config: Model.normalizeConfig(root.pendingEntry || root.hostEntry)
+
+  onHostEntryChanged: {
+    if (!root.pendingEntry) return
+    var arrived = JSON.stringify(root.hostEntry)
+    if (arrived === JSON.stringify(root.pendingEntry) || root.writtenHistory.indexOf(arrived) === -1)
+      root.pendingEntry = null
+  }
   // Snapshot da config anterior, só para o resync de `stepConfig` (que
   // precisa comparar a duração VELHA contra a nova). Não é uma binding viva:
   // é reatribuída à mão logo abaixo, uma vez por mudança real de `config`.
@@ -107,15 +120,19 @@ Item {
   function restart() { return root.dispatch("restart") }
   function reset() { return root.dispatch("reset") }
 
-  // A ÚNICA porta de escrita de configuração no repositório inteiro. A
-  // entrada é reconstruída a partir do valor vivo, nunca de uma cópia local:
-  // um painel de outro monitor não pode ficar com um retrato velho.
+  // A ÚNICA porta de escrita de configuração no repositório inteiro.
   function setConfig(key, value) {
     if (!root.shell || typeof root.shell.updateEntryInline !== "function") return false
     // updateEntryInline substitui a entrada inteira: partir da entrada viva
     // preserva chaves que não são nossas (o host descarta o `id` sozinho).
-    var entry = root.mergedSettings(root.shell.barConfig)
+    var base = root.pendingEntry || root.hostEntry
+    var entry = {}
+    for (var k in base) entry[k] = base[k]
     entry[key] = value
+    var history = root.writtenHistory.slice(-7)
+    history.push(JSON.stringify(entry))
+    root.writtenHistory = history
+    root.pendingEntry = entry
     return root.shell.updateEntryInline(root.pluginId, entry)
   }
 
