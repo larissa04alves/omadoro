@@ -45,8 +45,7 @@ Panel {
 
   property string tab: "pomodoro" // não existe TabBar; ButtonGroup + visible
 
-  // Altura dos sliders de config: só área de clique (ver ConfigSlider).
-  readonly property real sliderHeight: Style.space(36)
+  readonly property real sliderHeight: Style.space(36) // área de clique, não visual
 
   // Ui/Panel.switchPanel passa `root` (este objeto aninhado) ao host, que só
   // reconhece o widget montado no slot: sem este override, Tab dentro do
@@ -148,9 +147,7 @@ Panel {
             // Três ícones da mesma família (Nerd Font, via iconText do Button)
             // no mesmo corpo: emoji no lugar de ícone sai da fonte da shell e
             // vem colorido de outra fonte.
-            // O Button do host dimensiona pelo glifo, e cada glifo Nerd Font
-            // tem a sua largura: os três ficariam de tamanhos diferentes. O
-            // de reiniciar dá a medida; os outros dois copiam.
+            // O Button dimensiona pelo glifo; o de reiniciar dá a medida.
             Button {
               id: restartButton
               iconText: "󰜉"
@@ -218,7 +215,7 @@ Panel {
               minimum: 2
               maximum: 8
               step: 1
-              integer: false // ver ConfigSlider
+              integer: false
               tickCount: 7
               value: root.cfg.longEvery
               onReleased: function(v) { root.commitSetting("longEvery", Math.round(v)) }
@@ -264,17 +261,12 @@ Panel {
     PanelSlider {
       id: slider
       width: parent.width
-      // O MouseArea preenche o item: a altura extra é área de clique, não
-      // visual. Com o implicitHeight (~26px) um clique no rótulo não pegava.
       height: root.sliderHeight
       bar: root.bar
       minimum: field.minimum
       maximum: field.maximum
       step: 1
-      // `integer: true` arredonda o liveValue a cada pixel do arrasto, e o
-      // knob salta de inteiro em inteiro (45px por passo nos ciclos) em vez
-      // de seguir o mouse. Contínuo aqui; o arredondamento fica no rótulo e
-      // no `released`, e a Behavior do host assenta o knob no inteiro ao soltar.
+      // Contínuo: com integer o knob salta em degraus em vez de seguir o mouse.
       integer: false
       value: root.cfg[field.configKey]
       // `released` grava uma vez, no mouse-up: uma escrita de shell.json por

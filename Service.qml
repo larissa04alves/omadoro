@@ -45,17 +45,11 @@ Item {
     return out
   }
 
-  // O host devolve barConfig UMA escrita atrasado: syncPluginApis roda no
-  // onShellConfigChanged e lê shell.barConfig antes da binding reavaliar, e
-  // a FileView não reemite a própria gravação (medido ao vivo: três cliques
-  // seguidos, o serviço sempre com o valor anterior). Então a entrada que
-  // acabamos de gravar é a verdade até o host devolver exatamente ela; e
-  // setConfig parte dela, senão o segundo slider reverteria o primeiro.
+  // O host devolve barConfig uma escrita atrasado (ver CLAUDE.md): a entrada
+  // que acabamos de gravar vale até ele devolver exatamente ela.
   readonly property var hostEntry: mergedSettings(root.shell ? root.shell.barConfig : null)
   property var pendingEntry: null
-  // JSON das últimas entradas gravadas por nós: uma entrega atrasada de uma
-  // escrita nossa não é mudança externa. Só o que não está aqui (edição à
-  // mão do shell.json, outro monitor) derruba a cópia local.
+  // Entrega atrasada de uma escrita nossa não é mudança externa.
   property var writtenHistory: []
   readonly property var config: Model.normalizeConfig(root.pendingEntry || root.hostEntry)
 
@@ -126,9 +120,7 @@ Item {
   function restart() { return root.dispatch("restart") }
   function reset() { return root.dispatch("reset") }
 
-  // A ÚNICA porta de escrita de configuração no repositório inteiro. A
-  // entrada parte da última que gravamos (ou da do host, se ele já devolveu
-  // tudo): ver o comentário em hostEntry.
+  // A ÚNICA porta de escrita de configuração no repositório inteiro.
   function setConfig(key, value) {
     if (!root.shell || typeof root.shell.updateEntryInline !== "function") return false
     // updateEntryInline substitui a entrada inteira: partir da entrada viva
