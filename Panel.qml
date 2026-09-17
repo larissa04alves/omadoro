@@ -45,6 +45,9 @@ Panel {
 
   property string tab: "pomodoro" // não existe TabBar; ButtonGroup + visible
 
+  // Altura dos sliders de config: só área de clique (ver ConfigSlider).
+  readonly property real sliderHeight: Style.space(36)
+
   // Ui/Panel.switchPanel passa `root` (este objeto aninhado) ao host, que só
   // reconhece o widget montado no slot: sem este override, Tab dentro do
   // popup é um no-op silencioso.
@@ -145,7 +148,11 @@ Panel {
             // Três ícones da mesma família (Nerd Font, via iconText do Button)
             // no mesmo corpo: emoji no lugar de ícone sai da fonte da shell e
             // vem colorido de outra fonte.
+            // O Button do host dimensiona pelo glifo, e cada glifo Nerd Font
+            // tem a sua largura: os três ficariam de tamanhos diferentes. O
+            // de reiniciar dá a medida; os outros dois copiam.
             Button {
+              id: restartButton
               iconText: "󰜉"
               tooltipText: "Reiniciar a fase"
               bordered: true
@@ -155,8 +162,9 @@ Panel {
             }
 
             Button {
+              width: restartButton.implicitWidth
+              height: restartButton.implicitHeight
               iconText: root.vm.running ? "󰏤" : "󰐊"
-              iconSize: Style.font.iconLarge
               tooltipText: root.vm.running ? "Pausar" : "Retomar"
               bordered: true
               selected: true
@@ -166,6 +174,8 @@ Panel {
             }
 
             Button {
+              width: restartButton.implicitWidth
+              height: restartButton.implicitHeight
               iconText: "󰒭"
               tooltipText: "Pular a fase"
               bordered: true
@@ -181,7 +191,7 @@ Panel {
         Column {
           visible: root.tab === "config"
           width: parent.width
-          spacing: Style.space(16)
+          spacing: Style.space(8)
 
           ConfigSlider { label: "Tempo de foco"; configKey: "work"; minimum: 5; maximum: 60 }
           ConfigSlider { label: "Pausa curta"; configKey: "short"; minimum: 1; maximum: 20 }
@@ -203,11 +213,12 @@ Panel {
             PanelSlider {
               id: longEverySlider
               width: parent.width
+              height: root.sliderHeight
               bar: root.bar
               minimum: 2
               maximum: 8
               step: 1
-              integer: true
+              integer: false // ver ConfigSlider
               tickCount: 7
               value: root.cfg.longEvery
               onReleased: function(v) { root.commitSetting("longEvery", Math.round(v)) }
@@ -253,11 +264,18 @@ Panel {
     PanelSlider {
       id: slider
       width: parent.width
+      // O MouseArea preenche o item: a altura extra é área de clique, não
+      // visual. Com o implicitHeight (~26px) um clique no rótulo não pegava.
+      height: root.sliderHeight
       bar: root.bar
       minimum: field.minimum
       maximum: field.maximum
       step: 1
-      integer: true
+      // `integer: true` arredonda o liveValue a cada pixel do arrasto, e o
+      // knob salta de inteiro em inteiro (45px por passo nos ciclos) em vez
+      // de seguir o mouse. Contínuo aqui; o arredondamento fica no rótulo e
+      // no `released`, e a Behavior do host assenta o knob no inteiro ao soltar.
+      integer: false
       value: root.cfg[field.configKey]
       // `released` grava uma vez, no mouse-up: uma escrita de shell.json por
       // pixel arrastado seria desperdício, e com `allowMultiple: false` uma
